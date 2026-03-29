@@ -1,0 +1,18 @@
+{
+  "name": "WG Putzplan",
+  "short_name": "Putzplan",
+  "description": "WG Putzplan — Hausordnung & Wochenplan",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F5F7",
+  "theme_color": "#0071E3",
+  "icons": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

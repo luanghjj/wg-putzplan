@@ -1,0 +1,12 @@
+import { F, btnS } from "../styles";
+import { gwk, fd, ft } from "../utils/helpers";
+
+export default function HistoryScreen({t,st,hp,ph,vp}){
+  const sorted=[...st.completions].sort((a,b)=>b.timestamp-a.timestamp);const wk=gwk(new Date());
+  const doE=()=>{if(!hp("export_data"))return;const h="Datum,Uhrzeit,KW,Person,Zimmer,Bereich,Aufgabe,Punkte\n";const rows=sorted.map(c=>`${fd(c.timestamp)},${ft(c.timestamp)},${c.week},${c.person},${c.room},${c.areaId},${c.taskKey},${c.pts||1}`).join("\n");const b=new Blob([h+rows],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`wg_KW${wk}.csv`;a.click();};
+  return <div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><h2 style={{fontSize:20,color:"#1E293B",margin:0,fontFamily:F}}>📊 {t.history}</h2>{hp("export_data")&&<button style={btnS} onClick={doE}>📥 {t.exportCsv}</button>}</div>
+    <div style={{display:"flex",gap:8,marginBottom:14}}>{st.rooms.map(r=>{const c=st.completions.filter(c=>c.room===r.name&&c.week===wk).reduce((s,c)=>s+(c.pts||1),0);return <div key={r.id} style={{flex:1,background:"#fff",borderRadius:12,padding:12,textAlign:"center",boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}><div style={{fontSize:22,fontWeight:700,color:"#3B82F6"}}>{c}⭐</div><div style={{fontSize:11,color:"#64748B"}}>{r.name}</div></div>;})}</div>
+    {!sorted.length?<div style={{textAlign:"center",padding:32,color:"#94A3B8"}}>{t.noHistory}</div>:<div>{sorted.slice(0,60).map((c,i)=>{const area=st.weeklyAreas.find(a=>a.id===c.areaId);const pk=`${c.week}-${c.areaId}-${c.taskKey}`;return <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#fff",borderRadius:8,marginBottom:3,boxShadow:"0 1px 2px rgba(0,0,0,.03)"}}><div style={{width:8,height:8,borderRadius:"50%",background:area?.color||"#94A3B8",flexShrink:0}}/><div style={{flex:1,minWidth:0}}><div style={{fontSize:13,color:"#1E293B",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.taskKey}</div><div style={{fontSize:11,color:"#94A3B8"}}>{c.person} · +{c.pts||1}⭐ · KW{c.week}</div></div><div style={{display:"flex",alignItems:"center",gap:6}}>{ph[pk]&&<button style={{background:"#DBEAFE",border:"none",borderRadius:6,padding:"3px 6px",fontSize:11,color:"#2563EB",cursor:"pointer"}} onClick={()=>vp(ph[pk])}>📷</button>}<div style={{fontSize:11,color:"#64748B",textAlign:"right"}}><div>{fd(c.timestamp)}</div><div>{ft(c.timestamp)}</div></div></div></div>;})}</div>}
+  </div>;
+}
