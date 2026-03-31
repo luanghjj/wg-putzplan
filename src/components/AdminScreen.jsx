@@ -28,13 +28,14 @@ function RoomMgr({t,st,sv,hp,rpin,show}){
 
 function TaskMgr({t,st,sv,show,srp}){
   const[mode,setMode]=useState("daily");const[nd,setNd]=useState("");const[nv,setNv]=useState("");const[npts,setNpts]=useState(1);const[aid,setAid]=useState("kitchen");
+  const normRefKey=(taskDe)=>{if(!taskDe||typeof taskDe!="string")return null;const s=taskDe.trim();if(!s)return null;const exact=`task-${s}`; if(st.refPhotos?.[exact]) return exact; const normalized=`task-${s.toLowerCase()}`; if(st.refPhotos?.[normalized]) return normalized; const fallback=Object.keys(st.refPhotos||{}).find(k=>k.toLowerCase()===exact.toLowerCase()||k.toLowerCase()===normalized.toLowerCase()); return fallback||exact;};
   const[editTut,setEditTut]=useState(null);const[tutSteps,setTutSteps]=useState([]);const[tutVideo,setTutVideo]=useState("");
   const aD=()=>{if(!nd.trim())return;sv({...st,dailyTasks:[...st.dailyTasks,{de:nd.trim(),vi:nv.trim()||nd.trim(),pts:Number(npts)||1}]});setNd("");setNv("");setNpts(1);show("✓");};
   const dD=i=>{sv({...st,dailyTasks:st.dailyTasks.filter((_,idx)=>idx!==i)});};
   const aW=()=>{if(!nd.trim())return;sv({...st,weeklyAreas:st.weeklyAreas.map(a=>a.id===aid?{...a,tasks:[...a.tasks,{de:nd.trim(),vi:nv.trim()||nd.trim(),pts:Number(npts)||3}]}:a)});setNd("");setNv("");setNpts(3);show("✓");};
   const dW=(ai,ti)=>{sv({...st,weeklyAreas:st.weeklyAreas.map(a=>a.id===ai?{...a,tasks:a.tasks.filter((_,i)=>i!==ti)}:a)});};
-  const uRef=async(taskDe,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,600,.6);srp({...(st.refPhotos||{}),[`task-${taskDe}`]:img});show("📸 ✓");};
-  const dRef=(taskDe)=>{const r={...(st.refPhotos||{})};delete r[`task-${taskDe}`];srp(r);};
+  const uRef=async(taskDe,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,600,.6);const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;srp({...(st.refPhotos||{}),[key]:img});show("📸 ✓");};
+  const dRef=(taskDe)=>{const r={...(st.refPhotos||{})};const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;delete r[key];srp(r);};
   const openTutEdit=(taskDe)=>{const key=`task-${taskDe}`;const existing=st.tutorials?.[key];setEditTut(taskDe);setTutSteps(existing?.steps?existing.steps.map(s=>({...s})):[{textDe:"",textVi:"",photo:null}]);setTutVideo(existing?.videoUrl||"");};
   const saveTut=()=>{const key=`task-${editTut}`;const validSteps=tutSteps.filter(s=>s.textDe.trim()||s.textVi.trim()||s.photo);sv({...st,tutorials:{...(st.tutorials||{}),[key]:{steps:validSteps,videoUrl:tutVideo.trim()}}});setEditTut(null);show("📖 ✓");};
   const delTut=(taskDe)=>{const tuts={...(st.tutorials||{})};delete tuts[`task-${taskDe}`];sv({...st,tutorials:tuts});show("✓");};
@@ -44,7 +45,7 @@ function TaskMgr({t,st,sv,show,srp}){
   const stepPhoto=async(i,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,500,.5);updStep(i,"photo",img);};
 
   const TaskItem=({task,onDel})=>{
-    const refKey=`task-${task.de}`;const hasRef=!!st.refPhotos?.[refKey];const hasTut=st.tutorials?.[refKey]?.steps?.length>0;
+    const refKey=normRefKey(task.de);const hasRef=!!st.refPhotos?.[refKey];const hasTut=st.tutorials?.[refKey]?.steps?.length>0;
     return <div style={{background:"#fff",borderRadius:8,marginBottom:6,padding:"8px 10px",boxShadow:"0 1px 2px rgba(0,0,0,.03)"}}>
       <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{flex:1,fontSize:13}}>{task.de} <span style={{color:"#94A3B8",fontSize:11}}>({task.vi})</span></span><span style={{fontSize:12,color:"#F59E0B",fontWeight:700}}>+{task.pts}⭐</span><button style={delB} onClick={onDel}>×</button></div>
       <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4,flexWrap:"wrap"}}>

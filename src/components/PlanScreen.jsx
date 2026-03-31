@@ -8,6 +8,19 @@ export default function PlanScreen({t,st,user,hp,doDone,doUndo,isC,ph,vp,openTut
   const[rejectKey,setRejectKey]=useState(null);const[rejectReason,setRejectReason]=useState("");
   const lang=st.lang,wk=gwk(new Date()),rot=grot(wk,st.rooms,st.weeklyAreas);
   const day=new Date().toLocaleDateString(lang==="de"?"de-DE":"vi-VN",{weekday:"long"});
+
+  const normRefKey = (taskDe) => {
+    if(!taskDe || typeof taskDe !== "string") return null;
+    const s = taskDe.trim();
+    if(!s) return null;
+    const exact = `task-${s}`;
+    if(st.refPhotos?.[exact]) return exact;
+    const normalized = `task-${s.toLowerCase()}`;
+    if(st.refPhotos?.[normalized]) return normalized;
+    const fallback = Object.keys(st.refPhotos||{}).find(k=>k.toLowerCase()===exact.toLowerCase()||k.toLowerCase()===normalized.toLowerCase());
+    return fallback || exact;
+  };
+
   const canC=ai=>{if(hp("check_all"))return true;if(!hp("check_own_area"))return false;return user.roomId===rot[ai];};
   let tot=0,dn=0;st.weeklyAreas.forEach(a=>a.tasks.forEach(ta=>{tot++;if(isC(ta.de,a.id,wk))dn++;}));
   const pct=tot>0?Math.round(dn/tot*100):0;
@@ -17,7 +30,7 @@ export default function PlanScreen({t,st,user,hp,doDone,doUndo,isC,ph,vp,openTut
   const TR=({task,areaId,area})=>{
     const isDaily=areaId==="daily";
     const comp=isDaily?(user.role==="owner"?isC(task.de,areaId,wk):st.completions.find(c=>c.taskKey===task.de&&c.areaId==="daily"&&c.week===wk&&c.person===user.name)):isC(task.de,areaId,wk),k=`${areaId}-${task.de}`,pk=`${wk}-${areaId}-${task.de}`,ok=areaId==="daily"||canC(areaId);
-    const refKey=`task-${task.de}`;
+    const refKey=normRefKey(task.de);
     const hasRef=!!st.refPhotos?.[refKey];
     const tutKey=`task-${task.de}`;
     const hasTut=st.tutorials?.[tutKey]?.steps?.length>0;
@@ -32,7 +45,7 @@ export default function PlanScreen({t,st,user,hp,doDone,doUndo,isC,ph,vp,openTut
           :ok?<span style={cb} onClick={()=>doT(task.de,areaId)}/>
           :<span style={{...cb,opacity:.3,cursor:"not-allowed"}}/>}
           <div style={{flex:1}}>
-            <div style={{fontSize:14,color:C.text,textDecoration:comp?"line-through":"none",fontWeight:500,letterSpacing:"-0.01em"}}>{lang==="de"?task.de:task.vi}</div>
+            <div style={{fontSize:14,color:C.text,textDecoration:comp?"line-through":"none",fontWeight:500,letterSpacing:"-0.01em",display:"flex",alignItems:"center",gap:6}}>{lang==="de"?task.de:task.vi}{hasRef&&<span style={{fontSize:13}} title={t.refPhoto}>📷</span>}</div>
             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
               <span style={{fontSize:12,color:C.textSecondary}}>{lang==="de"?task.vi:task.de}</span>
               {hasRef&&<button style={{background:"none",border:"none",padding:0,fontSize:11,color:C.accent,cursor:"pointer",fontFamily:F,fontWeight:600}} onClick={()=>togRef(k)}>{refOpen?t.hideRef:t.showRef}</button>}

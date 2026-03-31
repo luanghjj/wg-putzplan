@@ -304,6 +304,7 @@ function PlanScr({t,st,user,hp,doDone,doUndo,isC,ph,vp,openTut}){
   const[tp,setTP]=useState({});const[err,setErr]=useState("");const[showRef,setShowRef]=useState({});
   const lang=st.lang,wk=gwk(new Date()),rot=grot(wk,st.rooms,st.weeklyAreas);
   const day=new Date().toLocaleDateString(lang==="de"?"de-DE":"vi-VN",{weekday:"long"});
+  const normRefKey=taskDe=>{if(!taskDe||typeof taskDe!="string")return null;const s=taskDe.trim();if(!s)return null;const exact=`task-${s}`; if(st.refPhotos?.[exact])return exact; const normalized=`task-${s.toLowerCase()}`; if(st.refPhotos?.[normalized])return normalized; const fallback=Object.keys(st.refPhotos||{}).find(k=>k.toLowerCase()===exact.toLowerCase()||k.toLowerCase()===normalized.toLowerCase()); return fallback||exact;};
   const canC=ai=>{if(hp("check_all"))return true;if(!hp("check_own_area"))return false;return user.roomId===rot[ai];};
   let tot=0,dn=0;st.weeklyAreas.forEach(a=>a.tasks.forEach(ta=>{tot++;if(isC(ta.de,a.id,wk))dn++;}));
   const pct=tot>0?Math.round(dn/tot*100):0;
@@ -312,7 +313,7 @@ function PlanScr({t,st,user,hp,doDone,doUndo,isC,ph,vp,openTut}){
 
   const TR=({task,areaId,area})=>{
     const comp=isC(task.de,areaId,wk),k=`${areaId}-${task.de}`,pk=`${wk}-${areaId}-${task.de}`,ok=areaId==="daily"||canC(areaId);
-    const refKey=`task-${task.de}`;
+    const refKey=normRefKey(task.de);
     const hasRef=!!st.refPhotos?.[refKey];
     const tutKey=`task-${task.de}`;
     const hasTut=st.tutorials?.[tutKey]?.steps?.length>0;
@@ -327,7 +328,7 @@ function PlanScr({t,st,user,hp,doDone,doUndo,isC,ph,vp,openTut}){
           :ok?<span style={cb} onClick={()=>doT(task.de,areaId)}/>
           :<span style={{...cb,opacity:.3,cursor:"not-allowed"}}/>}
           <div style={{flex:1}}>
-            <div style={{fontSize:14,color:"#1E293B",textDecoration:comp?"line-through":"none"}}>{lang==="de"?task.de:task.vi}</div>
+            <div style={{fontSize:14,color:"#1E293B",textDecoration:comp?"line-through":"none",display:"flex",alignItems:"center",gap:6}}>{lang==="de"?task.de:task.vi}{hasRef&&<span style={{fontSize:13}}>📷</span>}</div>
             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
               <span style={{fontSize:12,color:"#94A3B8"}}>{lang==="de"?task.vi:task.de}</span>
               {hasRef&&<button style={{background:"none",border:"none",padding:0,fontSize:11,color:"#3B82F6",cursor:"pointer",fontFamily:F,fontWeight:600}} onClick={()=>togRef(k)}>{refOpen?t.hideRef:t.showRef}</button>}
@@ -458,8 +459,8 @@ function TaskMgr({t,st,sv,show}){
   const dD=i=>{sv({...st,dailyTasks:st.dailyTasks.filter((_,idx)=>idx!==i)});};
   const aW=()=>{if(!nd.trim())return;sv({...st,weeklyAreas:st.weeklyAreas.map(a=>a.id===aid?{...a,tasks:[...a.tasks,{de:nd.trim(),vi:nv.trim()||nd.trim(),pts:Number(npts)||3}]}:a)});setNd("");setNv("");setNpts(3);show("✓");};
   const dW=(ai,ti)=>{sv({...st,weeklyAreas:st.weeklyAreas.map(a=>a.id===ai?{...a,tasks:a.tasks.filter((_,i)=>i!==ti)}:a)});};
-  const uRef=async(taskDe,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,600,.6);sv({...st,refPhotos:{...st.refPhotos,[`task-${taskDe}`]:img}});show("📸 ✓");};
-  const dRef=(taskDe)=>{const rp={...st.refPhotos};delete rp[`task-${taskDe}`];sv({...st,refPhotos:rp});};
+  const uRef=async(taskDe,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,600,.6);const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;sv({...st,refPhotos:{...st.refPhotos,[key]:img}});show("📸 ✓");};
+  const dRef=(taskDe)=>{const rp={...st.refPhotos};const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;delete rp[key];sv({...st,refPhotos:rp});};
 
   const openTutEdit=(taskDe)=>{
     const key=`task-${taskDe}`;
@@ -484,7 +485,7 @@ function TaskMgr({t,st,sv,show}){
   const stepPhoto=async(i,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,500,.5);updStep(i,"photo",img);};
 
   const TaskItem=({task,onDel})=>{
-    const refKey=`task-${task.de}`;
+    const refKey=normRefKey(task.de);
     const hasRef=!!st.refPhotos?.[refKey];
     const hasTut=st.tutorials?.[refKey]?.steps?.length>0;
     return <div style={{background:"#fff",borderRadius:8,marginBottom:6,padding:"8px 10px",boxShadow:"0 1px 2px rgba(0,0,0,.03)"}}>
