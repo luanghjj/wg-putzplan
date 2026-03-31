@@ -9,11 +9,18 @@ export default function PlanScreen({t,st,user,hp,doDone,doUndo,isC,ph,vp,openTut
   const lang=st.lang,wk=gwk(new Date()),rot=grot(wk,st.rooms,st.weeklyAreas);
   const day=new Date().toLocaleDateString(lang==="de"?"de-DE":"vi-VN",{weekday:"long"});
 
+  const normTaskKey = (taskDe) => {
+    if(!taskDe || typeof taskDe !== "string") return null;
+    const s = taskDe.trim();
+    if(!s) return null;
+    return `task-${s}`;
+  };
+
   const normRefKey = (taskDe) => {
     if(!taskDe || typeof taskDe !== "string") return null;
     const s = taskDe.trim();
     if(!s) return null;
-    const exact = `task-${s}`;
+    const exact = normTaskKey(taskDe);
     if(st.refPhotos?.[exact]) return exact;
     const normalized = `task-${s.toLowerCase()}`;
     if(st.refPhotos?.[normalized]) return normalized;
@@ -32,7 +39,7 @@ export default function PlanScreen({t,st,user,hp,doDone,doUndo,isC,ph,vp,openTut
     const comp=isDaily?(user.role==="owner"?isC(task.de,areaId,wk):st.completions.find(c=>c.taskKey===task.de&&c.areaId==="daily"&&c.week===wk&&c.person===user.name)):isC(task.de,areaId,wk),k=`${areaId}-${task.de}`,pk=`${wk}-${areaId}-${task.de}`,ok=areaId==="daily"||canC(areaId);
     const refKey=normRefKey(task.de);
     const hasRef=!!st.refPhotos?.[refKey];
-    const tutKey=`task-${task.de}`;
+    const tutKey=normTaskKey(task.de)||`task-${task.de}`;
     const hasTut=st.tutorials?.[tutKey]?.steps?.length>0;
     const refOpen=!!showRef[k];
     const tutOpen=!!showRef[`tut-${k}`];

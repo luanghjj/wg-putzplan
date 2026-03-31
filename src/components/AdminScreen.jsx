@@ -28,17 +28,18 @@ function RoomMgr({t,st,sv,hp,rpin,show}){
 
 function TaskMgr({t,st,sv,show,srp}){
   const[mode,setMode]=useState("daily");const[nd,setNd]=useState("");const[nv,setNv]=useState("");const[npts,setNpts]=useState(1);const[aid,setAid]=useState("kitchen");
-  const normRefKey=(taskDe)=>{if(!taskDe||typeof taskDe!="string")return null;const s=taskDe.trim();if(!s)return null;const exact=`task-${s}`; if(st.refPhotos?.[exact]) return exact; const normalized=`task-${s.toLowerCase()}`; if(st.refPhotos?.[normalized]) return normalized; const fallback=Object.keys(st.refPhotos||{}).find(k=>k.toLowerCase()===exact.toLowerCase()||k.toLowerCase()===normalized.toLowerCase()); return fallback||exact;};
+  const normTaskKey=(taskDe)=>{if(!taskDe||typeof taskDe!="string")return null;const s=taskDe.trim();if(!s)return null;return `task-${s}`;};
+  const normRefKey=(taskDe)=>{if(!taskDe||typeof taskDe!="string")return null;const s=taskDe.trim();if(!s)return null;const exact=normTaskKey(taskDe);if(st.refPhotos?.[exact]) return exact;const normalized=`task-${s.toLowerCase()}`;if(st.refPhotos?.[normalized]) return normalized;const fallback=Object.keys(st.refPhotos||{}).find(k=>k.toLowerCase()===exact.toLowerCase()||k.toLowerCase()===normalized.toLowerCase());return fallback||exact;};
   const[editTut,setEditTut]=useState(null);const[tutSteps,setTutSteps]=useState([]);const[tutVideo,setTutVideo]=useState("");
   const aD=()=>{if(!nd.trim())return;sv({...st,dailyTasks:[...st.dailyTasks,{de:nd.trim(),vi:nv.trim()||nd.trim(),pts:Number(npts)||1}]});setNd("");setNv("");setNpts(1);show("✓");};
   const dD=i=>{sv({...st,dailyTasks:st.dailyTasks.filter((_,idx)=>idx!==i)});};
   const aW=()=>{if(!nd.trim())return;sv({...st,weeklyAreas:st.weeklyAreas.map(a=>a.id===aid?{...a,tasks:[...a.tasks,{de:nd.trim(),vi:nv.trim()||nd.trim(),pts:Number(npts)||3}]}:a)});setNd("");setNv("");setNpts(3);show("✓");};
   const dW=(ai,ti)=>{sv({...st,weeklyAreas:st.weeklyAreas.map(a=>a.id===ai?{...a,tasks:a.tasks.filter((_,i)=>i!==ti)}:a)});};
-  const uRef=async(taskDe,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,600,.6);const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;srp({...(st.refPhotos||{}),[key]:img});show("📸 ✓");};
-  const dRef=(taskDe)=>{const r={...(st.refPhotos||{})};const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;delete r[key];srp(r);};
-  const openTutEdit=(taskDe)=>{const key=`task-${taskDe}`;const existing=st.tutorials?.[key];setEditTut(taskDe);setTutSteps(existing?.steps?existing.steps.map(s=>({...s})):[{textDe:"",textVi:"",photo:null}]);setTutVideo(existing?.videoUrl||"");};
-  const saveTut=()=>{const key=`task-${editTut}`;const validSteps=tutSteps.filter(s=>s.textDe.trim()||s.textVi.trim()||s.photo);sv({...st,tutorials:{...(st.tutorials||{}),[key]:{steps:validSteps,videoUrl:tutVideo.trim()}}});setEditTut(null);show("📖 ✓");};
-  const delTut=(taskDe)=>{const tuts={...(st.tutorials||{})};delete tuts[`task-${taskDe}`];sv({...st,tutorials:tuts});show("✓");};
+  const uRef=async(taskDe,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,600,.6);const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;const newRp={...(st.refPhotos||{}),[key]:img};srp(newRp,key,false);show("📸 ✓");};
+  const dRef=(taskDe)=>{const r={...(st.refPhotos||{})};const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;delete r[key];srp(r,key,true);};
+  const openTutEdit=(taskDe)=>{const key=normTaskKey(taskDe)||`task-${taskDe}`;const existing=st.tutorials?.[key];setEditTut(taskDe);setTutSteps(existing?.steps?existing.steps.map(s=>({...s})):[{textDe:"",textVi:"",photo:null}]);setTutVideo(existing?.videoUrl||"");};
+  const saveTut=()=>{const key=normTaskKey(editTut)||`task-${editTut}`;const validSteps=tutSteps.filter(s=>s.textDe.trim()||s.textVi.trim()||s.photo);sv({...st,tutorials:{...(st.tutorials||{}),[key]:{steps:validSteps,videoUrl:tutVideo.trim()}}});setEditTut(null);show("📖 ✓");};
+  const delTut=(taskDe)=>{const tuts={...(st.tutorials||{})};const key=normTaskKey(taskDe)||`task-${taskDe}`;delete tuts[key];sv({...st,tutorials:tuts});show("✓");};
   const addTutStep=()=>setTutSteps(s=>[...s,{textDe:"",textVi:"",photo:null}]);
   const rmTutStep=i=>setTutSteps(s=>s.filter((_,idx)=>idx!==i));
   const updStep=(i,field,val)=>setTutSteps(s=>s.map((x,idx)=>idx===i?{...x,[field]:val}:x));
@@ -292,7 +293,8 @@ function SheetsCfg({t,st,sv,rpin}){
 
 export default function AdminScreen({t,st,sv,hp,rpin,show,user,srp}){
   const[tab,setTab]=useState("rooms");
-  const tabs=[{id:"accounts",l:`👥 ${st.lang==="de"?"Konten":"Tài khoản"}`,s:user?.role==="owner"},{id:"rooms",l:`🚪 ${t.rooms}`,s:hp("manage_rooms")||hp("manage_residents")},{id:"tasks",l:`✏️ ${t.customTasks}`,s:hp("edit_tasks")},{id:"roles",l:`👥 ${t.roleManagement}`,s:hp("manage_roles")},{id:"perms",l:`🔒 ${t.permissions}`,s:hp("manage_roles")},{id:"bonus",l:`⭐ ${t.bonus}`,s:hp("manage_rooms")},{id:"sheets",l:"📊 Sheets",s:hp("config_sheets")},{id:"pin",l:"🔐 PIN",s:hp("manage_roles")},{id:"announce",l:"📢 "+({de:"Thông báo",vi:"Thông báo"}[st.lang]||"Ankündigungen"),s:user?.role==="owner"}];
+  const tabs=[{id:"accounts",l:`👥 ${st.lang==="de"?"Konten":"Tài khoản"}`,s:user?.role==="owner"},{id:"rooms",l:`🚪 ${t.rooms}`,s:hp("manage_rooms")||hp("manage_residents")},{id:"tasks",l:`✏️ ${t.customTasks}`,s:hp("edit_tasks")},{id:"roles",l:`👥 ${t.roleManagement}`,s:hp("manage_roles")},{id:"perms",l:`🔒 ${t.permissions}`,s:hp("manage_roles")},{id:"bonus",l:`⭐ ${t.bonus}`,s:hp("manage_rooms")},{id:"sheets",l:"📊 Sheets",s:hp("config_sheets")},{id:"pin",l:"🔐 PIN",s:hp("manage_roles")},{id:"sync",l:"🔄 Sync",s:user?.role==="owner"},{id:"announce",l:"📢 "+({de:"Thông báo",vi:"Thông báo"}[st.lang]||"Ankündigungen"),s:user?.role==="owner"}];
+  const doSync=()=>{sv({...st});show("✓ Dữ liệu được đồng bộ");};
   return <div>
     <h2 style={{fontSize:20,color:"#1E293B",margin:"0 0 14px",fontFamily:F}}>⚙️ {t.admin}</h2>
     <div style={{display:"flex",gap:4,marginBottom:16,flexWrap:"wrap"}}>{tabs.filter(x=>x.s).map(x=><button key={x.id} style={{...tabB,...(tab===x.id?tabA:{})}} onClick={()=>setTab(x.id)}>{x.l}</button>)}</div>
@@ -304,6 +306,7 @@ export default function AdminScreen({t,st,sv,hp,rpin,show,user,srp}){
     {tab==="bonus"&&<BonusCfg t={t} st={st} sv={sv} rpin={rpin} show={show}/>}
     {tab==="sheets"&&<SheetsCfg t={t} st={st} sv={sv} rpin={rpin}/>}
     {tab==="pin"&&<PinChg t={t} st={st} sv={sv} rpin={rpin} show={show}/>}
+    {tab==="sync"&&<div style={{background:"#fff",borderRadius:12,padding:16}}><p style={{fontSize:13,color:"#64748B",marginBottom:12}}>Bấn nút để đồng bộ tất cả dữ liệu (tutorials + references) lên Firebase Database</p><button style={{...btnP}} onClick={doSync}>🔄 Sync tất cả lên Firebase</button></div>}
     {tab==="announce"&&<AnnouncementAdmin t={t} st={st} sv={sv} user={user} show={show}/>}
   </div>;
 }

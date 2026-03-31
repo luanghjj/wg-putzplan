@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "./data/i18n";
 import { OWNER, DEF } from "./data/constants";
-import { storage, SK, onDataChange } from "./data/storage";
+import { storage, SK, onDataChange, refPhotoStorage } from "./data/storage";
 import { gwk, grot, fd, ft, gmo, getTimeLeft } from "./utils/helpers";
 import { F, C, btnG, ov, mod, globalCSS } from "./styles";
 
@@ -38,22 +38,36 @@ export default function App(){
   const skipSync = useRef(false);
 
   useEffect(()=>{(async()=>{try{
-    const[r,p,rr]=await Promise.all([storage.get(SK.data).catch(()=>null),storage.get(SK.photos).catch(()=>null),storage.get(SK.refPhotos).catch(()=>null)]);
+    const[r,p]=await Promise.all([storage.get(SK.data).catch(()=>null),storage.get(SK.photos).catch(()=>null)]);
+    // Load refPhotos using per-key storage (avoids Firebase 10MB node limit)
+    const rpData = await refPhotoStorage.getAll();
+    if(Object.keys(rpData).length>0) setRp(rpData);
     if(r?.value){
       const d=JSON.parse(r.value);
       if(!d.users?.some(u=>u.id==="owner-1"))d.users=[{...OWNER},...(d.users||[])];
-      // Migrate old refPhotos from wg4 to wg4r
-      if(d.refPhotos && Object.keys(d.refPhotos).length>0 && (!rr?.value || rr.value==="{}")){
-        await storage.set(SK.refPhotos,JSON.stringify(d.refPhotos));
-        setRp(d.refPhotos);
+      // Migrate old refPhotos embedded in main data to refPhotoStorage (one-time migration)
+      if(d.refPhotos && Object.keys(d.refPhotos).length>0 && Object.keys(rpData).length===0){
+        const oldRp = d.refPhotos;
+        for(const [k,v] of Object.entries(oldRp)){
+          await refPhotoStorage.setOne(k, v);
+        }
+        setRp(oldRp);
       }
+      // ensure default tutorials are available if missing
+      const existingTutorials = d.tutorials || {};
+      const mergedTutorials = {...DEF.tutorials, ...existingTutorials};
+      const addedTutorials = Object.keys(mergedTutorials).length > Object.keys(existingTutorials).length;
+      d.tutorials = mergedTutorials;
       // Strip refPhotos from main state to keep it small
       const {refPhotos:_,...clean}=d;
       setSt({...DEF,...clean});
+      // Save merged tutorial back to DB if we inserted defaults or were missing keys
+      if(addedTutorials){
+        try{skipSync.current=true; await storage.set(SK.data, JSON.stringify(clean));}catch{};
+      }
     }else setSt({...DEF});
     if(p?.value)setPh(JSON.parse(p.value));
-    if(rr?.value){const rpData=JSON.parse(rr.value);if(Object.keys(rpData).length>0)setRp(rpData);}
-  }catch{setSt({...DEF});}setLd(false);})();},[]);
+  }catch(e){console.error('Load error:',e);setSt({...DEF});}setLd(false);})();},[]);
 
   useEffect(()=>{
     const unsub1 = onDataChange(SK.data, (val)=>{
@@ -66,9 +80,10 @@ export default function App(){
       if(skipSync.current)return;
       setPh(val||{});
     });
+    // Listen for refPhotos node changes (real-time sync across devices)
     const unsub3 = onDataChange(SK.refPhotos, (val)=>{
       if(skipSync.current)return;
-      setRp(val||{});
+      if(val && typeof val==="object") setRp(val);
     });
     return ()=>{unsub1();unsub2();unsub3();};
   },[]);
@@ -79,6 +94,23 @@ export default function App(){
   const hp=p=>{if(!user)return false;if(user.role==="owner")return true;return(st.rolePerms?.[user.role]||[]).includes(p);};
   const rpin=()=>new Promise(r=>setPinM({resolve:r}));
   const t=st?T[st.lang||"de"]:T.de;
+
+  // srp: save/delete a single refPhoto by key (avoids Firebase 10MB limit)
+  const srp=async(newRp, changedKey, deleted)=>{
+    if(changedKey){
+      if(deleted){
+        await refPhotoStorage.deleteOne(changedKey);
+      } else if(newRp[changedKey]){
+        await refPhotoStorage.setOne(changedKey, newRp[changedKey]);
+      }
+    } else {
+      // Fallback: save all (e.g. migration or bulk update)
+      for(const [k,v] of Object.entries(newRp)){
+        await refPhotoStorage.setOne(k, v);
+      }
+    }
+    setRp(newRp);
+  };
 
   const doDone=async(tk,ai,photo)=>{
     if(!user)return;const now=Date.now(),wk=gwk(new Date());
@@ -137,10 +169,10 @@ export default function App(){
           <NavBar t={t} scr={scr} set={setScr} user={user} hp={hp} st={st} isC={isC} onLogout={()=>{setUser(null);setScr("login")}}/>
           {scr==="plan"&&<PlanScreen t={t} st={{...st,refPhotos:rp}} user={user} hp={hp} doDone={doDone} doUndo={doUndo} isC={isC} ph={ph} vp={setPhView} openTut={setTutView} doVerify={doVerify} doReject={doReject} getVerif={getVerif}/>}
           {scr==="leaderboard"&&<LeaderScreen t={t} st={st} user={user}/>}
-          {scr==="rules"&&<RulesScreen t={t}/>}
+          {scr==="rules"&&<RulesScreen t={t} lang={st.lang}/>}
           {scr==="history"&&<HistoryScreen t={t} st={st} hp={hp} ph={ph} vp={setPhView}/>}
           {scr==="reports"&&<ReportScreen t={t} st={st} sv={sv} user={user} show={show}/>}
-      {scr==="admin"&&<AdminScreen t={t} st={{...st,refPhotos:rp}} sv={sv} hp={hp} rpin={rpin} show={show} user={user} srp={async(v)=>{setRp(v);skipSync.current=true;await storage.set(SK.refPhotos,JSON.stringify(v));}}/>}
+          {scr==="admin"&&<AdminScreen t={t} st={{...st,refPhotos:rp}} sv={sv} hp={hp} rpin={rpin} show={show} user={user} srp={srp}/>}
         </div>}
       {/* Announcement modal — shows after login for unread messages */}
       {user&&scr!=="login"&&<AnnouncementModal announcements={st.announcements||[]} user={user} st={st} onDismiss={(id)=>{

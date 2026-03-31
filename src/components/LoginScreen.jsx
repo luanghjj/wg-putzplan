@@ -40,10 +40,6 @@ export default function LoginScreen({t,st,sv,onLogin}){
       </div>
       {err&&<p style={{color:C.red,fontSize:13,marginTop:8,textAlign:"center",fontWeight:500}}>{err}</p>}
       <button style={{...btnP,width:"100%",marginTop:14,padding:"13px 20px",borderRadius:14,fontSize:16}} onClick={go}>{t.login}</button>
-
-      <div style={{textAlign:"center",marginTop:20,paddingTop:16,borderTop:`1px solid ${C.border}`}}>
-        <button style={{background:"none",border:"none",color:C.textSecondary,fontSize:13,cursor:"pointer",fontFamily:F,fontWeight:500}} onClick={()=>sv({...st,lang:st.lang==="de"?"vi":"de"})}>🌐 {st.lang==="de"?"Tiếng Việt":"Deutsch"}</button>
-      </div>
     </div>
   </div>;
 }

@@ -304,7 +304,8 @@ function PlanScr({t,st,user,hp,doDone,doUndo,isC,ph,vp,openTut}){
   const[tp,setTP]=useState({});const[err,setErr]=useState("");const[showRef,setShowRef]=useState({});
   const lang=st.lang,wk=gwk(new Date()),rot=grot(wk,st.rooms,st.weeklyAreas);
   const day=new Date().toLocaleDateString(lang==="de"?"de-DE":"vi-VN",{weekday:"long"});
-  const normRefKey=taskDe=>{if(!taskDe||typeof taskDe!="string")return null;const s=taskDe.trim();if(!s)return null;const exact=`task-${s}`; if(st.refPhotos?.[exact])return exact; const normalized=`task-${s.toLowerCase()}`; if(st.refPhotos?.[normalized])return normalized; const fallback=Object.keys(st.refPhotos||{}).find(k=>k.toLowerCase()===exact.toLowerCase()||k.toLowerCase()===normalized.toLowerCase()); return fallback||exact;};
+  const normTaskKey=taskDe=>{if(!taskDe||typeof taskDe!="string")return null;const s=taskDe.trim();if(!s)return null;return `task-${s}`;};
+  const normRefKey=taskDe=>{if(!taskDe||typeof taskDe!="string")return null;const s=taskDe.trim();if(!s)return null;const exact=normTaskKey(taskDe); if(st.refPhotos?.[exact])return exact; const normalized=`task-${s.toLowerCase()}`; if(st.refPhotos?.[normalized])return normalized; const fallback=Object.keys(st.refPhotos||{}).find(k=>k.toLowerCase()===exact.toLowerCase()||k.toLowerCase()===normalized.toLowerCase()); return fallback||exact;};
   const canC=ai=>{if(hp("check_all"))return true;if(!hp("check_own_area"))return false;return user.roomId===rot[ai];};
   let tot=0,dn=0;st.weeklyAreas.forEach(a=>a.tasks.forEach(ta=>{tot++;if(isC(ta.de,a.id,wk))dn++;}));
   const pct=tot>0?Math.round(dn/tot*100):0;
@@ -315,7 +316,7 @@ function PlanScr({t,st,user,hp,doDone,doUndo,isC,ph,vp,openTut}){
     const comp=isC(task.de,areaId,wk),k=`${areaId}-${task.de}`,pk=`${wk}-${areaId}-${task.de}`,ok=areaId==="daily"||canC(areaId);
     const refKey=normRefKey(task.de);
     const hasRef=!!st.refPhotos?.[refKey];
-    const tutKey=`task-${task.de}`;
+    const tutKey=normTaskKey(task.de)||`task-${task.de}`;
     const hasTut=st.tutorials?.[tutKey]?.steps?.length>0;
     const refOpen=!!showRef[k];
     const tutOpen=!!showRef[`tut-${k}`];

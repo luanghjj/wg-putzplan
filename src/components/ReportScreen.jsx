@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { gwk } from "../utils/helpers";
+import { useState, useRef } from "react";
+import { gwk, compImg } from "../utils/helpers";
 import { F, C, inp, inpS, btnP, btnG, btnS, lbl, ov, mod } from "../styles";
 
 const CATS=["messy","noise","bathroom","rules","other"];
@@ -11,13 +11,48 @@ export default function ReportScreen({t,st,sv,user,show}){
   const[cat,setCat]=useState("messy");
   const[text,setText]=useState("");
   const[target,setTarget]=useState("");
+  const[photo,setPhoto]=useState(null);
+  const[camOpen,setCamOpen]=useState(false);
+  const[viewPhoto,setViewPhoto]=useState(null);
+  const videoRef=useRef();
+  const canvasRef=useRef();
+  const streamRef=useRef();
   const isAdmin=user?.role==="owner"||user?.role==="manager";
   const wk=gwk(new Date());
   const reports=(st.reports||[]).sort((a,b)=>b.timestamp-a.timestamp);
 
-  // Rate limit: max 3 per week per user
   const myCount=reports.filter(r=>r.reporter===user?.name&&r.week===wk).length;
   const canSend=myCount<3;
+
+  // Camera functions
+  const openCam=async()=>{
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+      streamRef.current=stream;
+      setCamOpen(true);
+      setTimeout(()=>{if(videoRef.current){videoRef.current.srcObject=stream;videoRef.current.play();}},100);
+    }catch{
+      const inp=document.createElement("input");
+      inp.type="file";inp.accept="image/*";inp.capture="environment";
+      inp.onchange=async(e)=>{const f=e.target.files?.[0];if(f)setPhoto(await compImg(f,600,.6));};
+      inp.click();
+    }
+  };
+  const snap=async()=>{
+    const v=videoRef.current,c=canvasRef.current;
+    if(!v||!c)return;
+    c.width=v.videoWidth;c.height=v.videoHeight;
+    c.getContext("2d").drawImage(v,0,0);
+    const blob=await(await fetch(c.toDataURL("image/jpeg",0.6))).blob();
+    const file=new File([blob],"report.jpg",{type:"image/jpeg"});
+    setPhoto(await compImg(file,600,0.6));
+    closeCam();
+  };
+  const closeCam=()=>{
+    if(streamRef.current)streamRef.current.getTracks().forEach(t=>t.stop());
+    streamRef.current=null;
+    setCamOpen(false);
+  };
 
   const send=()=>{
     if(!canSend){show(t.reportLimit,"error");return;}
@@ -25,6 +60,7 @@ export default function ReportScreen({t,st,sv,user,show}){
       id:Date.now().toString(),
       category:cat,
       text:text.trim(),
+      photo:photo||null,
       target:target||null,
       reporter:user.name,
       timestamp:Date.now(),
@@ -32,7 +68,7 @@ export default function ReportScreen({t,st,sv,user,show}){
       status:"new",
     };
     sv({...st,reports:[...(st.reports||[]),r]});
-    setCat("messy");setText("");setTarget("");setForm(false);
+    setCat("messy");setText("");setTarget("");setPhoto(null);setForm(false);
     show(t.reportSent);
   };
 
@@ -48,9 +84,6 @@ export default function ReportScreen({t,st,sv,user,show}){
   const catLabel=(c)=>t[`cat_${c}`]||c;
   const statusLabel=(s)=>t[`report${s.charAt(0).toUpperCase()+s.slice(1)}`]||s;
   const fd=(ts)=>new Date(ts).toLocaleDateString(st.lang==="de"?"de-DE":"vi-VN",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
-
-  // New report count for badge
-  const newCount=reports.filter(r=>r.status==="new").length;
 
   return <div>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
@@ -81,13 +114,37 @@ export default function ReportScreen({t,st,sv,user,show}){
 
       {/* Description */}
       <label style={lbl}>{t.reportText}</label>
-      <textarea style={{...inp,minHeight:60,resize:"vertical",fontSize:13}} value={text} onChange={e=>setText(e.target.value)} placeholder={st.lang==="de"?"Was ist passiert?":"Chuyện gì đã xảy ra?"}/>
+      <textarea style={{...inp,minHeight:60,resize:"vertical",fontSize:13}} value={text} onChange={e=>setText(e.target.value)} placeholder="Chuyện gì đã xảy ra?"/>
+
+      {/* Photo capture */}
+      <label style={{...lbl,marginTop:10}}>📸 Ảnh bằng chứng</label>
+      {camOpen?<div style={{borderRadius:12,overflow:"hidden",background:"#000",marginBottom:8}}>
+        <video ref={videoRef} style={{width:"100%",borderRadius:12}} playsInline muted/>
+        <canvas ref={canvasRef} style={{display:"none"}}/>
+        <div style={{display:"flex",gap:8,padding:8,justifyContent:"center"}}>
+          <button style={{padding:"8px 20px",background:C.accent,color:"#fff",border:"none",borderRadius:10,fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:F}} onClick={snap}>📸 Chụp</button>
+          <button style={{padding:"8px 14px",background:"rgba(255,255,255,0.2)",color:"#fff",border:"none",borderRadius:10,fontSize:13,cursor:"pointer",fontFamily:F}} onClick={closeCam}>✕</button>
+        </div>
+      </div>
+      :photo?<div style={{position:"relative",display:"inline-block",marginBottom:8}}>
+        <img src={photo} style={{maxHeight:120,borderRadius:10,border:`1px solid ${C.border}`}} alt="evidence"/>
+        <button style={{position:"absolute",top:-6,right:-6,background:"rgba(0,0,0,.7)",color:"#fff",border:"none",borderRadius:"50%",width:22,height:22,fontSize:13,cursor:"pointer",lineHeight:"22px"}} onClick={()=>setPhoto(null)}>×</button>
+      </div>
+      :<button style={{width:"100%",padding:10,background:"#FFF7ED",border:"2px dashed #FDBA74",borderRadius:10,color:"#EA580C",fontSize:13,fontWeight:600,cursor:"pointer",fontFamily:F,marginBottom:8}} onClick={openCam}>📷 Chụp ảnh bằng chứng</button>}
 
       {!canSend&&<p style={{color:C.red,fontSize:12,marginTop:6}}>⚠️ {t.reportLimit}</p>}
 
-      <div style={{display:"flex",gap:8,marginTop:12}}>
-        <button style={{...btnG,flex:1}} onClick={()=>setForm(false)}>{t.cancel}</button>
+      <div style={{display:"flex",gap:8,marginTop:8}}>
+        <button style={{...btnG,flex:1}} onClick={()=>{setForm(false);closeCam();}}>{t.cancel}</button>
         <button style={{...btnP,flex:1,opacity:canSend?1:0.5}} onClick={canSend?send:undefined}>{t.sendReport}</button>
+      </div>
+    </div>}
+
+    {/* Photo viewer modal */}
+    {viewPhoto&&<div style={{...ov,zIndex:9999}} onClick={()=>setViewPhoto(null)}>
+      <div style={{...mod,padding:8,maxWidth:"90vw",background:"#000",borderRadius:16}} onClick={e=>e.stopPropagation()}>
+        <img src={viewPhoto} style={{width:"100%",borderRadius:12}} alt="report"/>
+        <button style={{width:"100%",marginTop:8,padding:10,background:"rgba(255,255,255,0.15)",border:"none",borderRadius:10,color:"#fff",fontSize:14,fontWeight:600,cursor:"pointer",fontFamily:F}} onClick={()=>setViewPhoto(null)}>✕ Đóng</button>
       </div>
     </div>}
 
@@ -111,6 +168,9 @@ export default function ReportScreen({t,st,sv,user,show}){
           {r.target&&<div style={{fontSize:12,color:C.text,marginBottom:4}}>
             <span style={{color:C.textSecondary}}>{t.reportTarget}:</span> <strong>{r.target}</strong>
           </div>}
+
+          {/* Photo evidence */}
+          {r.photo&&<img src={r.photo} style={{maxHeight:100,borderRadius:10,marginBottom:8,cursor:"pointer",border:`1px solid ${C.border}`}} alt="evidence" onClick={()=>setViewPhoto(r.photo)}/>}
 
           {/* Text */}
           {r.text&&<div style={{fontSize:13,color:C.text,padding:"8px 10px",background:"rgba(0,0,0,0.02)",borderRadius:8,marginBottom:8,lineHeight:1.4}}>{r.text}</div>}
