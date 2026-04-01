@@ -208,7 +208,7 @@ export default function App() {
   return (
     <div style={{ fontFamily: F, minHeight: "100vh", background: C.bg, maxWidth: 520, margin: "0 auto", position: "relative" }}>
       <style>{globalCSS}</style>
-      {toast && <div style={{ position: "fixed", top: 16, left: "50%", transform: "translateX(-50%)", color: "#fff", padding: "12px 24px", borderRadius: 14, fontSize: 14, fontWeight: 600, zIndex: 1000, boxShadow: C.shadowMd, fontFamily: F, animation: "fadeUp .25s cubic-bezier(0.34,1.56,0.64,1)", background: toast.ty === "success" ? C.green : C.red, letterSpacing: "-0.01em" }}>{toast.m}</div>}
+      {toast && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", color: "#fff", padding: "10px 22px", borderRadius: 980, fontSize: 14, fontWeight: 500, zIndex: 1000, boxShadow: "0 4px 20px rgba(0,0,0,0.1)", fontFamily: F, animation: "fadeUp .3s cubic-bezier(0.25,0.1,0.25,1)", background: toast.ty === "success" ? C.green : C.red, letterSpacing: 0 }}>{toast.m}</div>}
       {pinM && <PinModal t={t} st={st} pm={pinM} set={setPinM} />}
       {phView && <div style={ov} onClick={() => setPhView(null)}><div style={{ ...mod, maxWidth: 420, padding: 8 }} onClick={e => e.stopPropagation()}><img src={phView} style={{ width: "100%", borderRadius: 12 }} alt="proof" /><button style={{ ...btnG, width: "100%", marginTop: 8 }} onClick={() => setPhView(null)}>{t.closePhoto}</button></div></div>}
       {tutView && <TutorialPopup t={t} lang={st.lang} tut={tutView} onClose={() => setTutView(null)} />}
@@ -223,7 +223,7 @@ export default function App() {
         };
         checkDeadline(); setInterval(checkDeadline, 3600000);
       }} /> :
-        <div style={{ padding: "14px 14px 32px", maxWidth: 520, margin: "0 auto" }}>
+        <div style={{ padding: "14px 14px 40px", maxWidth: 520, margin: "0 auto" }}>
           <NavBar t={t} scr={scr} set={setScr} user={user} hp={hp} st={st} isC={isC} onLogout={() => { setUser(null); setScr("login") }} />
           {scr === "plan" && <PlanScreen t={t} st={{ ...st, refPhotos: rp }} user={user} hp={hp} doDone={doDone} doUndo={doUndo} isC={isC} isDailyC={isDailyC} ph={ph} vp={setPhView} openTut={setTutView} doVerify={doVerify} doReject={doReject} getVerif={getVerif} />}
           {scr === "leaderboard" && <LeaderScreen t={t} st={st} user={user} />}

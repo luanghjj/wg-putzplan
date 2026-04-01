@@ -10,30 +10,41 @@ export default function RulesScreen({t,lang,st}){
   const m2=managers[1];
 
   return <div>
-    <h2 style={{fontSize:20,color:"#1E293B",margin:"0 0 14px",fontFamily:F}}>📜 {t.rulesTitle}</h2>
+    <h2 style={{fontSize:28,fontWeight:700,color:C.text,margin:"0 0 20px",fontFamily:F,letterSpacing:"-0.02em"}}>📜 {t.rulesTitle}</h2>
 
-    {/* Manager Contact Card */}
-    {managers.length>0&&<div style={{background:"linear-gradient(135deg,#EEF2FF,#E0E7FF)",borderRadius:18,padding:20,marginBottom:16,boxShadow:"0 4px 20px rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.15)"}}>
-      <div style={{display:"flex",justifyContent:"center",gap:24,marginBottom:14}}>
+    {/* Manager Contact — Apple-style card */}
+    {managers.length>0&&<div style={{background:C.white,borderRadius:18,padding:28,marginBottom:20,boxShadow:C.shadowSm}}>
+      <div style={{display:"flex",justifyContent:"center",gap:28,marginBottom:16}}>
         {[{photo:mp1,mgr:m1},{photo:mp2,mgr:m2}].filter(x=>x.mgr).map((x,i)=>
           <div key={i} style={{textAlign:"center"}}>
-            <div style={{width:90,height:90,borderRadius:18,overflow:"hidden",border:"3px solid #fff",boxShadow:"0 4px 16px rgba(99,102,241,0.2)",margin:"0 auto 8px",background:"linear-gradient(135deg,#C7D2FE,#A5B4FC)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+            <div style={{width:80,height:80,borderRadius:40,overflow:"hidden",margin:"0 auto 10px",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center"}}>
               {x.photo?<img src={x.photo} alt={x.mgr?.name} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
-              :<span style={{fontSize:36,color:"#6366F1",fontWeight:700}}>{x.mgr?.name?.[0]||"?"}</span>}
+              :<span style={{fontSize:28,fontWeight:600,color:C.textSecondary}}>{x.mgr?.name?.[0]||"?"}</span>}
             </div>
-            <div style={{fontSize:14,fontWeight:700,color:"#3730A3"}}>{x.mgr?.name}</div>
-            <div style={{fontSize:11,color:"#6366F1",fontWeight:500}}>{x.mgr?.room} · 🔧 {isVi?"Quản lý":"Manager"}</div>
+            <div style={{fontSize:15,fontWeight:600,color:C.text,letterSpacing:"-0.01em"}}>{x.mgr?.name}</div>
+            <div style={{fontSize:12,color:C.textSecondary}}>{x.mgr?.room}</div>
           </div>
         )}
       </div>
-      <div style={{textAlign:"center",fontSize:13,color:"#4338CA",fontWeight:600,lineHeight:1.5}}>
-        {isVi?"📞 Mọi thắc mắc xin liên hệ với 2 quản lý":"📞 Bei Fragen wenden Sie sich bitte an die 2 Manager"}
+      <div style={{textAlign:"center",fontSize:14,color:C.textSecondary,lineHeight:1.5}}>
+        {isVi?"Mọi thắc mắc xin liên hệ với 2 quản lý":"Bei Fragen wenden Sie sich bitte an die 2 Manager"}
       </div>
     </div>}
 
-    {RULES.map((cat,ci)=><div key={ci} style={{background:"#fff",borderRadius:12,padding:12,marginBottom:8,boxShadow:"0 1px 3px rgba(0,0,0,.04)"}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,paddingBottom:6,borderBottom:"1px solid #F1F5F9"}}><span style={{fontSize:18}}>{cat.icon}</span><strong style={{fontSize:14,color:"#1E293B"}}>{isVi?cat.catVi:cat.catDe}</strong><span style={{fontSize:12,color:"#64748B"}}>{isVi?cat.catDe:cat.catVi}</span></div>
-      {cat.items.map((item,ii)=><div key={ii} style={{display:"flex",gap:8,padding:"5px 0",fontSize:13}}><span style={{color:"#3B82F6",fontWeight:700}}>•</span><div><div style={{fontSize:13,color:"#334155"}}>{isVi?item.vi:item.de}</div><div style={{fontSize:11,color:"#94A3B8"}}>{isVi?item.de:item.vi}</div></div></div>)}
+    {/* Rules — Apple cards, no heavy borders */}
+    {RULES.map((cat,ci)=><div key={ci} style={{background:C.white,borderRadius:18,padding:20,marginBottom:10,boxShadow:C.shadowSm}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12,paddingBottom:8,borderBottom:"1px solid rgba(0,0,0,0.04)"}}>
+        <span style={{fontSize:18}}>{cat.icon}</span>
+        <strong style={{fontSize:15,fontWeight:600,color:C.text,letterSpacing:"-0.01em"}}>{isVi?cat.catVi:cat.catDe}</strong>
+        <span style={{fontSize:12,color:C.textSecondary}}>{isVi?cat.catDe:cat.catVi}</span>
+      </div>
+      {cat.items.map((item,ii)=><div key={ii} style={{display:"flex",gap:8,padding:"6px 0",fontSize:14}}>
+        <span style={{color:C.accent,fontWeight:500,fontSize:12,marginTop:2}}>●</span>
+        <div>
+          <div style={{fontSize:14,color:C.text,lineHeight:1.5}}>{isVi?item.vi:item.de}</div>
+          <div style={{fontSize:12,color:C.textSecondary,lineHeight:1.4}}>{isVi?item.de:item.vi}</div>
+        </div>
+      </div>)}
     </div>)}
   </div>;
 }
