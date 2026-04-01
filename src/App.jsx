@@ -49,7 +49,7 @@ export default function App() {
     tutorials: d.tutorials || {},
     rolePerms: d.rolePerms || DEF.rolePerms,
   });
-  const skipSync = useRef(false);
+  const skipSync = useRef(0); // counter: how many realtime echoes to skip
   useEffect(() => {
     (async () => {
       try {
@@ -76,24 +76,32 @@ export default function App() {
 
   useEffect(() => {
     const unsub1 = onDataChange(SK.data, (val) => {
-      if (skipSync.current) { skipSync.current = false; return; }
+      if (skipSync.current > 0) { skipSync.current--; return; }
       const d = safeSt({ ...DEF, ...val });
       if (!d.users?.some(u => u.id === "owner-1")) d.users = [{ ...OWNER }, ...(d.users || [])];
       setSt(d);
     });
     const unsub2 = onDataChange(SK.photos, (val) => {
-      if (skipSync.current) return;
+      if (skipSync.current > 0) { skipSync.current--; return; }
       setPh(val || {});
     });
     const unsub3 = onDataChange(SK.refPhotos, (val) => {
-      if (skipSync.current) return;
+      if (skipSync.current > 0) { skipSync.current--; return; }
       if (val && typeof val === "object") setRp(val);
     });
     return () => { unsub1(); unsub2(); unsub3(); };
   }, []);
 
-  const sv = async ns => { setSt(ns); try { await storage.set(SK.data, JSON.stringify(ns)); } catch { } };
-  const sp = async np => { setPh(np); try { await storage.set(SK.photos, JSON.stringify(np)); } catch { } };
+  const sv = async ns => {
+    setSt(ns);
+    skipSync.current++; // block one realtime echo from our own save
+    try { await storage.set(SK.data, JSON.stringify(ns)); } catch { skipSync.current = Math.max(0, skipSync.current - 1); }
+  };
+  const sp = async np => {
+    setPh(np);
+    skipSync.current++; // block one realtime echo
+    try { await storage.set(SK.photos, JSON.stringify(np)); } catch { skipSync.current = Math.max(0, skipSync.current - 1); }
+  };
   const show = (m, ty = "success") => { setToast({ m, ty }); setTimeout(() => setToast(null), 2500); };
   const hp = p => { if (!user) return false; if (user.role === "owner") return true; return (st.rolePerms?.[user.role] || []).includes(p); };
   const rpin = () => new Promise(r => setPinM({ resolve: r }));
@@ -127,10 +135,19 @@ export default function App() {
     const vKey = isDaily ? `${today}-daily-${tk}` : `${wk}-${ai}-${tk}`;
     const updatedVerif = { ...(st.verifications || {}) };
     if (updatedVerif[vKey]?.status === "rejected") delete updatedVerif[vKey];
-    await sv({ ...st, completions: [...st.completions, e], verifications: updatedVerif });
+    const newState = { ...st, completions: [...st.completions, e], verifications: updatedVerif };
+    // Batch state updates: set both in parallel to avoid two separate re-renders
     if (photo) {
       const photoKey = isDaily ? `${today}-daily-${tk}-${user.name}` : `${wk}-${ai}-${tk}-${user.name}`;
-      await sp({ ...ph, [photoKey]: photo });
+      const newPhotos = { ...ph, [photoKey]: photo };
+      setSt(newState); setPh(newPhotos);
+      skipSync.current += 2; // skip echo for both data + photos saves
+      await Promise.all([
+        storage.set(SK.data, JSON.stringify(newState)).catch(() => {}),
+        storage.set(SK.photos, JSON.stringify(newPhotos)).catch(() => {}),
+      ]);
+    } else {
+      await sv(newState);
     }
     show(st.lang === "de" ? `✓ Erledigt - warten auf Bestätigung` : `✓ Hoàn thành - chờ xác nhận`);
     if (st.sheetsUrl) { try { await fetch(st.sheetsUrl, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ person: user.name, room: user.room, task: tk, area: ai || "daily", date: fd(now), time: ft(now), week: wk, points: taskPts }) }); } catch { } }
