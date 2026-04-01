@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { gwk, grot, ft, fd, getToday, getTimeLeft } from "../utils/helpers";
+import { gwk, grot, ft, fd, getToday, getTimeLeft, getWeekRange, getDeadlineStr } from "../utils/helpers";
 import { F, C, inpS, dBdg, aCard } from "../styles";
 import PhotoCapture from "./PhotoCapture";
 
@@ -8,6 +8,8 @@ export default function PlanScreen({t,st,user,hp,doDone,doUndo,isC,isDailyC,ph,v
   const[rejectKey,setRejectKey]=useState(null);const[rejectReason,setRejectReason]=useState("");
   const lang=st.lang,wk=gwk(new Date()),today=getToday(),rot=grot(wk,st.rooms,st.weeklyAreas);
   const day=new Date().toLocaleDateString(lang==="de"?"de-DE":"vi-VN",{weekday:"long"});
+  const wr=getWeekRange(wk);
+  const dlStr=getDeadlineStr(wk,lang);
 
   const normTaskKey = (taskDe) => {
     if(!taskDe || typeof taskDe !== "string") return null;
@@ -141,9 +143,9 @@ export default function PlanScreen({t,st,user,hp,doDone,doUndo,isC,isDailyC,ph,v
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",background:"rgba(255,255,255,0.72)",backdropFilter:"blur(20px) saturate(180%)",WebkitBackdropFilter:"blur(20px) saturate(180%)",borderRadius:18,padding:16,marginBottom:14,boxShadow:C.shadowSm,border:`1px solid ${C.border}`}}>
       <div>
         <h2 style={{margin:0,fontSize:20,color:C.text,fontFamily:F,fontWeight:700,letterSpacing:"-0.022em"}}>{t.plan}</h2>
-        <p style={{margin:"4px 0 0",fontSize:13,color:C.textSecondary}}>{t.kwNum} {wk} · {day}</p>
+        <p style={{margin:"4px 0 0",fontSize:13,color:C.textSecondary}}>{t.kwNum} {wk} · {wr.range} · {day}</p>
         <div style={{display:"flex",alignItems:"center",gap:6,marginTop:6}}>
-          <span style={{fontSize:11,color:tl.overdue?C.red:C.textSecondary}}>⏰ {t.deadline}: {t.deadlineDay}</span>
+          <span style={{fontSize:11,color:tl.overdue?C.red:C.textSecondary}}>⏰ {t.deadline}: {dlStr}</span>
           {tl.overdue?<span style={{fontSize:11,fontWeight:700,color:C.red,background:"rgba(255,59,48,0.08)",padding:"2px 8px",borderRadius:6}}>⚠️ {t.overdue}</span>
           :<span style={{fontSize:11,fontWeight:600,color:tl.hours<24?C.orange:C.green,background:tl.hours<24?"rgba(255,149,0,0.08)":"rgba(52,199,89,0.08)",padding:"2px 8px",borderRadius:6}}>{t.timeLeft} {tl.text}</span>}
         </div>

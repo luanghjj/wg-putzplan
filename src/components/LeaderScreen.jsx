@@ -1,4 +1,4 @@
-import { gwk, grot, gmo, getTimeLeft } from "../utils/helpers";
+import { gwk, grot, gmo, getTimeLeft, getWeekRange, getDeadlineStr } from "../utils/helpers";
 import { F, C } from "../styles";
 
 const sanitizeTaskKey = (tk) => tk.replace(/[.#$\/\[\]]/g, "_");
@@ -6,6 +6,8 @@ const sanitizeTaskKey = (tk) => tk.replace(/[.#$\/\[\]]/g, "_");
 export default function LeaderScreen({t,st,user}){
   const canSeeAll=user?.role==="owner"||user?.role==="manager";
   const wk=gwk(new Date()),mo=gmo(),tl=getTimeLeft(wk);
+  const wr=getWeekRange(wk);
+  const dlStr=getDeadlineStr(wk,st.lang);
   const users=st.users.filter(u=>u.room!=="—");
   // Calculate points: use == for loose comparison (DB stores strings, helpers return numbers)
   const gP=(u,f)=>st.completions.filter(c=>c.person===u.name&&(f==="week"?c.week==wk:f==="month"?c.month==mo:true)).reduce((s,c)=>s+(c.pts||1),0);
@@ -45,7 +47,7 @@ export default function LeaderScreen({t,st,user}){
   return <div>
     {w&&w.month>0&&<div style={{background:"linear-gradient(135deg,#FFF8E1,#FFE082)",borderRadius:18,padding:22,marginBottom:16,textAlign:"center",boxShadow:"0 4px 20px rgba(255,204,0,0.15)",border:"1px solid rgba(255,204,0,0.2)"}}><div style={{fontSize:44}}>🏆</div><h3 style={{margin:"8px 0 4px",fontFamily:F,color:"#7B6B00",fontSize:18,fontWeight:700,letterSpacing:"-0.022em"}}>{t.monthlyWinner}</h3><div style={{fontSize:24,fontWeight:800,color:"#5D4E00",fontFamily:F}}>{w.name}</div><div style={{fontSize:14,color:"#8B7500"}}>{w.month} {t.points} · {st.rewardText||t.defaultReward}</div></div>}
 
-    <h3 style={{fontSize:15,fontWeight:700,color:C.text,margin:"0 0 12px",fontFamily:F,letterSpacing:"-0.022em"}}>📋 {t.statusReport} — {t.kwNum} {wk}</h3>
+    <h3 style={{fontSize:15,fontWeight:700,color:C.text,margin:"0 0 12px",fontFamily:F,letterSpacing:"-0.022em"}}>📋 {t.statusReport} — {t.kwNum} {wk} ({wr.range})</h3>
     <div style={{background:"rgba(255,255,255,0.72)",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderRadius:18,padding:16,marginBottom:16,boxShadow:C.shadowSm,border:`1px solid ${C.border}`}}>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
         <div style={{flex:1,height:8,background:"rgba(0,0,0,0.04)",borderRadius:4,overflow:"hidden"}}>
@@ -56,7 +58,7 @@ export default function LeaderScreen({t,st,user}){
       </div>
       <div style={{display:"flex",alignItems:"center",gap:6,padding:"8px 12px",borderRadius:12,background:tl.overdue?"rgba(255,59,48,0.06)":"rgba(0,0,0,0.02)",marginBottom:12}}>
         <span style={{fontSize:13}}>{tl.overdue?"⚠️":"⏰"}</span>
-        <span style={{fontSize:12,fontWeight:600,color:tl.overdue?C.red:C.text}}>{t.deadline}: {t.deadlineDay}</span>
+        <span style={{fontSize:12,fontWeight:600,color:tl.overdue?C.red:C.text}}>{t.deadline}: {dlStr}</span>
         <span style={{marginLeft:"auto",fontSize:12,fontWeight:700,color:tl.overdue?C.red:tl.hours<24?C.orange:C.green}}>{tl.overdue?t.overdue:`${t.timeLeft} ${tl.text}`}</span>
       </div>
       {roomReports.filter(rr=>canSeeAll||rr.room.id===user?.roomId).map(rr=> <div key={rr.room.id} style={{marginBottom:12,padding:12,background:"rgba(0,0,0,0.02)",borderRadius:14,border:`1px solid ${C.border}`}}>

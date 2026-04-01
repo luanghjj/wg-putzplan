@@ -23,3 +23,31 @@ export function getTimeLeft(wk){
   const h=Math.floor(diff/36e5),m=Math.floor((diff%36e5)/6e4);
   return{overdue:false,hours:h,text:`${h}h ${m}m`};
 }
+
+// Get Monday-Sunday date range for a given ISO week
+export function getWeekRange(wk){
+  const w=Number(wk);
+  const jan4=new Date(Date.UTC(new Date().getFullYear(),0,4));
+  const mon=new Date(jan4.getTime()+((w-1)*7-(jan4.getUTCDay()-1))*864e5);
+  // Adjust to Monday
+  const dayOfWeek=mon.getUTCDay()||7;
+  mon.setUTCDate(mon.getUTCDate()-(dayOfWeek-1));
+  const sun=new Date(mon);
+  sun.setUTCDate(sun.getUTCDate()+6);
+  const fmt=(d)=>`${String(d.getUTCDate()).padStart(2,"0")}.${String(d.getUTCMonth()+1).padStart(2,"0")}`;
+  return{
+    mon,sun,
+    range:`${fmt(mon)} – ${fmt(sun)}`,
+    deadlineStr:`${t=>t==="de"?"So":"CN"} ${fmt(sun)}.${sun.getUTCFullYear()}`
+  };
+}
+
+// Format deadline with full date
+export function getDeadlineStr(wk,lang){
+  const dl=getDeadline(wk);
+  const dayNames={de:["So","Mo","Di","Mi","Do","Fr","Sa"],vi:["CN","T2","T3","T4","T5","T6","T7"]};
+  const dn=dayNames[lang||"de"][dl.getUTCDay()];
+  const dd=String(dl.getUTCDate()).padStart(2,"0");
+  const mm=String(dl.getUTCMonth()+1).padStart(2,"0");
+  return `${dn}, ${dd}.${mm} · 23:59`;
+}
