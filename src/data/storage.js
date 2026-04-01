@@ -184,13 +184,11 @@ async function saveState(ns) {
     rolePerms: ns.rolePerms, fairness: ns.fairness,
     managerPhoto1: ns.managerPhoto1, managerPhoto2: ns.managerPhoto2,
   };
-  promises.push(
-    supabase.from("config").upsert(
-      Object.entries(configFields)
-        .filter(([, v]) => v !== undefined)
-        .map(([k, v]) => ({ key: k, value: v, updated_at: new Date().toISOString() }))
-    )
-  );
+  const configEntries = Object.entries(configFields);
+  const toUpsert = configEntries.filter(([, v]) => v != null).map(([k, v]) => ({ key: k, value: v, updated_at: new Date().toISOString() }));
+  const toDelete = configEntries.filter(([, v]) => v === null).map(([k]) => k);
+  if (toUpsert.length) promises.push(supabase.from("config").upsert(toUpsert));
+  if (toDelete.length) promises.push(supabase.from("config").delete().in("key", toDelete));
 
   // Announcements — only if changed
   if (JSON.stringify(ns.announcements) !== JSON.stringify(prev.announcements)) {
