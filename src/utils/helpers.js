@@ -3,6 +3,11 @@ export function grot(wk,rooms,areas){if(!rooms.length)return {};const r={};areas
 export function fd(ts){return new Date(ts).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});}
 export function ft(ts){return new Date(ts).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});}
 export function gmo(){return new Date().getMonth()+1;}
+// Get today's date string in German timezone (Europe/Berlin) — format: "YYYY-MM-DD"
+export function getToday(){
+  const fmt=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit",day:"2-digit"});
+  return fmt.format(new Date());
+}
 export function compImg(file,mw=400,q=0.5){return new Promise(res=>{const r=new FileReader();r.onload=e=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");const rt=Math.min(mw/img.width,mw/img.height,1);c.width=img.width*rt;c.height=img.height*rt;c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",q));};img.src=e.target.result;};r.readAsDataURL(file);});}
 
 export function getDeadline(wk){

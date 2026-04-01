@@ -36,7 +36,7 @@ Tạo một Artifact HTML single-file gọi Claude Opus qua Anthropic API, giao 
 - `stroke-width: 1.5`, `stroke-linecap: round`, `stroke-linejoin: round`
 - Kích thước tiêu chuẩn: 20×20px
 - Màu: inherit từ text color
-
+màu
 Ví dụ icon send:
 ```svg
 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -124,6 +124,7 @@ async function sendMessage(userText, conversationHistory) {
       messages: conversationHistory
     })
   });
+   
 
   const data = await response.json();
   const assistantText = data.content
@@ -136,7 +137,7 @@ async function sendMessage(userText, conversationHistory) {
   return assistantText;
 }
 ```
-
+conversationHistory duy trì toàn bộ cuộc trò chuyện để hỗ trợ multi-turn.
 ## Animations & Micro-interactions
 
 ```css

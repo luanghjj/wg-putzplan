@@ -1,10 +1,13 @@
 import { gwk, grot, gmo, getTimeLeft } from "../utils/helpers";
 import { F, C } from "../styles";
 
+const sanitizeTaskKey = (tk) => tk.replace(/[.#$\/\[\]]/g, "_");
+
 export default function LeaderScreen({t,st,user}){
   const canSeeAll=user?.role==="owner"||user?.role==="manager";
   const wk=gwk(new Date()),mo=gmo(),tl=getTimeLeft(wk);
   const users=st.users.filter(u=>u.room!=="—");
+  // Calculate points: sum pts from completions (pts is set on completion, fallback to 1 for legacy entries)
   const gP=(u,f)=>st.completions.filter(c=>c.person===u.name&&(f==="week"?c.week===wk:f==="month"?c.month===mo:true)).reduce((s,c)=>s+(c.pts||1),0);
   const ranked=users.map(u=>({...u,week:gP(u,"week"),month:gP(u,"month")})).sort((a,b)=>b.month-a.month);
   const w=ranked[0];const medals=["🥇","🥈","🥉"];
@@ -18,7 +21,7 @@ export default function LeaderScreen({t,st,user}){
       area.tasks.forEach(task=>{
         totalTasks++;
         const comp=st.completions.find(c=>c.taskKey===task.de&&c.areaId===area.id&&c.week===wk);
-        const verif=(st.verifications||{})[`${wk}-${area.id}-${task.de}`];
+        const verif=(st.verifications||{})[`${wk}-${area.id}-${sanitizeTaskKey(task.de)}`];
         const status=comp?(verif?.status==="rejected"?"rejected":verif?.status==="verified"?"verified":"done"):(tl.overdue?"missed":"open");
         if(comp)doneTasks++;
         if(verif?.status==="verified")verifiedTasks++;

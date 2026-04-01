@@ -1,4 +1,4 @@
-const CACHE_NAME = 'putzplan-v4.3';
+const CACHE_NAME = 'putzplan-v4.7';
 const ASSETS = ['/', '/index.html'];
 
 // Install: cache core assets
@@ -25,15 +25,36 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('firebaseio.com')) return;
   if (e.request.url.includes('googleapis.com')) return;
+  
+  // Skip invalid schemes (chrome-extension, etc)
+  try {
+    const url = new URL(e.request.url);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+  } catch {
+    return;
+  }
 
   e.respondWith(
     fetch(e.request)
       .then((res) => {
+        if (!res || !res.ok) return res;
         const clone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+        try {
+          caches.open(CACHE_NAME).then((cache) => {
+            try {
+              cache.put(e.request, clone);
+            } catch (err) {
+              console.debug('Cache put error:', err);
+            }
+          }).catch(err => console.debug('Cache open error:', err));
+        } catch (err) {
+          console.debug('Cache operation error:', err);
+        }
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() => {
+        return caches.match(e.request).catch(() => new Response('offline'));
+      })
   );
 });
 

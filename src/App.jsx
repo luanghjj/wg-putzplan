@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { T } from "./data/i18n";
 import { OWNER, DEF } from "./data/constants";
 import { storage, SK, onDataChange, refPhotoStorage } from "./data/storage";
-import { gwk, grot, fd, ft, gmo, getTimeLeft } from "./utils/helpers";
+import { gwk, grot, fd, ft, gmo, getToday, getTimeLeft } from "./utils/helpers";
 import { F, C, btnG, ov, mod, globalCSS } from "./styles";
 
 // Register service worker
@@ -37,6 +37,17 @@ export default function App(){
   const[tutView,setTutView]=useState(null);
   const skipSync = useRef(false);
 
+  // Helper: sanitize object keys for Firebase (can't contain . # $ / [ ])
+  const sanitizeKeys = (obj) => {
+    if(!obj || typeof obj !== "object") return obj;
+    const result = {};
+    for(const [k, v] of Object.entries(obj)){
+      const safeKey = k.replace(/[.#$\/\[\]]/g, "_");
+      result[safeKey] = v;
+    }
+    return result;
+  };
+
   useEffect(()=>{(async()=>{try{
     const[r,p]=await Promise.all([storage.get(SK.data).catch(()=>null),storage.get(SK.photos).catch(()=>null)]);
     // Load refPhotos using per-key storage (avoids Firebase 10MB node limit)
@@ -44,6 +55,16 @@ export default function App(){
     if(Object.keys(rpData).length>0) setRp(rpData);
     if(r?.value){
       const d=JSON.parse(r.value);
+      // Firebase may return arrays as objects — normalize
+      if(d.completions && !Array.isArray(d.completions)) d.completions=Object.values(d.completions);
+      if(d.users && !Array.isArray(d.users)) d.users=Object.values(d.users);
+      if(d.announcements && !Array.isArray(d.announcements)) d.announcements=Object.values(d.announcements);
+      if(d.reports && !Array.isArray(d.reports)) d.reports=Object.values(d.reports);
+      if(d.rooms && !Array.isArray(d.rooms)) d.rooms=Object.values(d.rooms);
+      if(d.weeklyAreas && !Array.isArray(d.weeklyAreas)){
+        d.weeklyAreas=Object.values(d.weeklyAreas);
+        d.weeklyAreas.forEach(a=>{if(a.tasks&&!Array.isArray(a.tasks))a.tasks=Object.values(a.tasks);});
+      }
       if(!d.users?.some(u=>u.id==="owner-1"))d.users=[{...OWNER},...(d.users||[])];
       // Migrate old refPhotos embedded in main data to refPhotoStorage (one-time migration)
       if(d.refPhotos && Object.keys(d.refPhotos).length>0 && Object.keys(rpData).length===0){
@@ -56,8 +77,9 @@ export default function App(){
       // ensure default tutorials are available if missing
       const existingTutorials = d.tutorials || {};
       const mergedTutorials = {...DEF.tutorials, ...existingTutorials};
-      const addedTutorials = Object.keys(mergedTutorials).length > Object.keys(existingTutorials).length;
-      d.tutorials = mergedTutorials;
+      const sanitizedTutorials = sanitizeKeys(mergedTutorials);
+      const addedTutorials = Object.keys(sanitizedTutorials).length > Object.keys(existingTutorials).length;
+      d.tutorials = sanitizedTutorials;
       // Strip refPhotos from main state to keep it small
       const {refPhotos:_,...clean}=d;
       setSt({...DEF,...clean});
@@ -73,6 +95,16 @@ export default function App(){
     const unsub1 = onDataChange(SK.data, (val)=>{
       if(skipSync.current){skipSync.current=false;return;}
       const d={...DEF,...val};
+      // Firebase may return arrays as objects with numeric keys — always normalize
+      if(d.completions && !Array.isArray(d.completions)) d.completions=Object.values(d.completions);
+      if(d.users && !Array.isArray(d.users)) d.users=Object.values(d.users);
+      if(d.announcements && !Array.isArray(d.announcements)) d.announcements=Object.values(d.announcements);
+      if(d.reports && !Array.isArray(d.reports)) d.reports=Object.values(d.reports);
+      if(d.rooms && !Array.isArray(d.rooms)) d.rooms=Object.values(d.rooms);
+      if(d.weeklyAreas && !Array.isArray(d.weeklyAreas)){
+        d.weeklyAreas=Object.values(d.weeklyAreas);
+        d.weeklyAreas.forEach(a=>{if(a.tasks&&!Array.isArray(a.tasks))a.tasks=Object.values(a.tasks);});
+      }
       if(!d.users?.some(u=>u.id==="owner-1"))d.users=[{...OWNER},...(d.users||[])];
       setSt(d);
     });
@@ -112,38 +144,112 @@ export default function App(){
     setRp(newRp);
   };
 
+  // v4.3: sanitize task keys for Firebase (can't contain . # $ / [ ])
+  const sanitizeTaskKey = (tk) => tk.replace(/[.#$\/\[\]]/g, "_");
+
   const doDone=async(tk,ai,photo)=>{
-    if(!user)return;const now=Date.now(),wk=gwk(new Date());
+    if(!user)return;const now=Date.now(),wk=gwk(new Date()),today=getToday();
     const all=[...st.dailyTasks,...st.weeklyAreas.flatMap(a=>a.tasks)];
-    const pts=all.find(x=>x.de===tk)?.pts||1;
-    const e={taskKey:tk,areaId:ai||"daily",person:user.name,room:user.room,timestamp:now,week:wk,month:gmo(),pts};
-    await sv({...st,completions:[...st.completions,e]});
-    if(photo)await sp({...ph,[`${wk}-${ai}-${tk}`]:photo});
-    show(st.lang==="de"?`✓ +${pts} Punkte!`:`✓ +${pts} Điểm!`);
-    if(st.sheetsUrl){try{await fetch(st.sheetsUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({person:user.name,room:user.room,task:tk,area:ai||"daily",date:fd(now),time:ft(now),week:wk,points:pts})});}catch{}}
+    const taskPts=all.find(x=>x.de===tk)?.pts||1;
+    const isDaily=(ai||"daily")==="daily";
+    const e={taskKey:tk,areaId:ai||"daily",person:user.name,room:user.room,timestamp:now,week:wk,month:gmo(),pts:taskPts};
+    if(isDaily) e.day=today; // daily tasks track by day (German timezone)
+    // Clear old rejected verification entry so re-done task shows as fresh pending
+    const safeK=sanitizeTaskKey(tk);
+    const vKey=isDaily?`${today}-daily-${safeK}`:`${wk}-${ai}-${safeK}`;
+    const oldVerif=(st.verifications||{})[vKey];
+    const updatedVerif={...(st.verifications||{})};
+    if(oldVerif?.status==="rejected") delete updatedVerif[vKey];
+    await sv({...st,completions:[...st.completions,e],verifications:updatedVerif});
+    if(photo){
+      const photoKey=isDaily?`${today}-daily-${tk}-${user.name}`:`${wk}-${ai}-${tk}-${user.name}`;
+      await sp({...ph,[photoKey]:photo});
+    }
+    show(st.lang==="de"?`✓ Erledigt - warten auf Bestätigung`:`✓ Hoàn thành - chờ xác nhận`);
+    if(st.sheetsUrl){try{await fetch(st.sheetsUrl,{method:"POST",mode:"no-cors",headers:{"Content-Type":"application/json"},body:JSON.stringify({person:user.name,room:user.room,task:tk,area:ai||"daily",date:fd(now),time:ft(now),week:wk,points:taskPts,status:"pending_verification"})});}catch{}}
   };
-  const doUndo=async(tk,ai,wk)=>{
-    await sv({...st,completions:st.completions.filter(c=>!(c.taskKey===tk&&(c.areaId||"daily")===(ai||"daily")&&c.week===wk))});
-    const np={...ph};delete np[`${wk}-${ai}-${tk}`];await sp(np);
+  const doUndo=async(tk,ai,wkOrDay)=>{
+    const isDaily=(ai||"daily")==="daily";
+    await sv({...st,completions:st.completions.filter(c=>{
+      if(c.taskKey!==tk||(c.areaId||"daily")!==(ai||"daily")||c.person!==user.name) return true;
+      if(isDaily) return (c.day||"")===""?c.week!==wkOrDay:c.day!==wkOrDay; // match by day for daily, fallback to week for legacy
+      return c.week!==wkOrDay;
+    })});
+    const np={...ph};
+    const photoKey=isDaily?`${wkOrDay}-daily-${tk}-${user.name}`:`${wkOrDay}-${ai}-${tk}-${user.name}`;
+    delete np[photoKey];
+    await sp(np);
   };
   const isC=(tk,ai,wk)=>st.completions.find(c=>c.taskKey===tk&&(c.areaId||"daily")===(ai||"daily")&&c.week===wk);
+  // Daily task completion check — uses day (German timezone) instead of week
+  const isDailyC=(tk,person)=>{const today=getToday();return st.completions.find(c=>c.taskKey===tk&&c.areaId==="daily"&&(c.day===today||((!c.day)&&c.week===gwk(new Date())))&&(!person||c.person===person));};
 
-  // v4.3: Verify/Reject
-  const doVerify=async(tk,ai,wk,by)=>{
-    const key=`${wk}-${ai}-${tk}`;
-    await sv({...st,verifications:{...(st.verifications||{}),[key]:{status:"verified",by,at:Date.now()}}});
-    show(st.lang==="de"?"✓ Bestätigt!":"✓ Đã xác nhận!");
+  // doVerify: params={tk, ai, by, person, compDay, compWeek}
+  const doVerify=async(params)=>{
+    const {tk,ai,by,person,compDay,compWeek}=params;
+    const safeKey = sanitizeTaskKey(tk);
+    const isDaily=(ai||"daily")==="daily";
+    const vKeyRef=isDaily?(compDay||compWeek):compWeek;
+    const key=`${vKeyRef}-${ai||"daily"}-${safeKey}`;
+    // Find matching completion
+    const completion = st.completions.find(c=>{
+      if(c.taskKey!==tk||(c.areaId||"daily")!==(ai||"daily")) return false;
+      if(isDaily){
+        if(compDay&&c.day) return c.day===compDay&&(!person||c.person===person);
+        if(compDay&&!c.day) return c.week===compWeek&&(!person||c.person===person); // legacy
+        return c.week===compWeek&&(!person||c.person===person);
+      }
+      return c.week===compWeek&&(!person||c.person===person);
+    });
+    if(!completion) return;
+    const all=[...st.dailyTasks,...st.weeklyAreas.flatMap(a=>a.tasks)];
+    const pts=all.find(x=>x.de===tk)?.pts||1;
+    const updatedCompletions = st.completions.map(c=>{
+      if(c.taskKey!==tk||(c.areaId||"daily")!==(ai||"daily")) return c;
+      if(isDaily){
+        if(compDay&&c.day){ if(c.day!==compDay) return c; }
+        else { if(c.week!==compWeek) return c; }
+        if(person&&c.person!==person) return c;
+      } else {
+        if(c.week!==compWeek) return c;
+        if(person&&c.person!==person) return c;
+      }
+      return {...c,pts,verified:true,verifiedBy:by,verifiedAt:Date.now()};
+    });
+    await sv({...st,completions:updatedCompletions,verifications:{...(st.verifications||{}),[key]:{status:"verified",by,at:Date.now()}}});
+    show(st.lang==="de"?`✓ Bestätigt! +${pts} Punkte`:`✓ Xác nhận thành công! +${pts} Điểm`);
   };
-  const doReject=async(tk,ai,wk,by,reason)=>{
-    const key=`${wk}-${ai}-${tk}`;
+  // doReject: params={tk, ai, by, reason, person, compDay, compWeek}
+  const doReject=async(params)=>{
+    const {tk,ai,by,reason,person,compDay,compWeek}=params;
+    const safeKey = sanitizeTaskKey(tk);
+    const isDaily=(ai||"daily")==="daily";
+    const vKeyRef=isDaily?(compDay||compWeek):compWeek;
+    const key=`${vKeyRef}-${ai||"daily"}-${safeKey}`;
     const ns={...st,
-      completions:st.completions.filter(c=>!(c.taskKey===tk&&(c.areaId||"daily")===(ai||"daily")&&c.week===wk)),
+      completions:st.completions.filter(c=>{
+        if(c.taskKey!==tk||(c.areaId||"daily")!==(ai||"daily")) return true;
+        if(isDaily){
+          if(compDay&&c.day){ if(c.day!==compDay) return true; }
+          else { if(c.week!==compWeek) return true; }
+          if(person&&c.person!==person) return true;
+        } else {
+          if(c.week!==compWeek) return true;
+          if(person&&c.person!==person) return true;
+        }
+        return false;
+      }),
       verifications:{...(st.verifications||{}),[key]:{status:"rejected",by,reason,at:Date.now()}}
     };
     await sv(ns);
     show(st.lang==="de"?"✗ Abgelehnt — bitte nochmal erledigen":"✗ Từ chối — vui lòng làm lại","error");
   };
-  const getVerif=(tk,ai,wk)=>(st.verifications||{})[`${wk}-${ai}-${tk}`];
+  const getVerif=(tk,ai,compDay,compWeek)=>{
+    const safeKey = sanitizeTaskKey(tk);
+    const isDaily=(ai||"daily")==="daily";
+    const vKeyRef=isDaily?(compDay||compWeek):compWeek;
+    return (st.verifications||{})[`${vKeyRef}-${ai||"daily"}-${safeKey}`];
+  };
 
   if(ld||!st) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",minHeight:"100vh"}}><div style={{width:36,height:36,border:"3px solid #E2E8F0",borderTopColor:"#3B82F6",borderRadius:"50%",animation:"spin .8s linear infinite"}}/></div>;
 
@@ -167,10 +273,10 @@ export default function App(){
       }}/>:
         <div style={{padding:"14px 14px 32px",maxWidth:520,margin:"0 auto"}}>
           <NavBar t={t} scr={scr} set={setScr} user={user} hp={hp} st={st} isC={isC} onLogout={()=>{setUser(null);setScr("login")}}/>
-          {scr==="plan"&&<PlanScreen t={t} st={{...st,refPhotos:rp}} user={user} hp={hp} doDone={doDone} doUndo={doUndo} isC={isC} ph={ph} vp={setPhView} openTut={setTutView} doVerify={doVerify} doReject={doReject} getVerif={getVerif}/>}
+          {scr==="plan"&&<PlanScreen t={t} st={{...st,refPhotos:rp}} user={user} hp={hp} doDone={doDone} doUndo={doUndo} isC={isC} isDailyC={isDailyC} ph={ph} vp={setPhView} openTut={setTutView} doVerify={doVerify} doReject={doReject} getVerif={getVerif}/>}
           {scr==="leaderboard"&&<LeaderScreen t={t} st={st} user={user}/>}
           {scr==="rules"&&<RulesScreen t={t} lang={st.lang}/>}
-          {scr==="history"&&<HistoryScreen t={t} st={st} hp={hp} ph={ph} vp={setPhView}/>}
+          {scr==="history"&&<HistoryScreen t={t} st={st} hp={hp} ph={ph} vp={setPhView} user={user}/>}
           {scr==="reports"&&<ReportScreen t={t} st={st} sv={sv} user={user} show={show}/>}
           {scr==="admin"&&<AdminScreen t={t} st={{...st,refPhotos:rp}} sv={sv} hp={hp} rpin={rpin} show={show} user={user} srp={srp}/>}
         </div>}

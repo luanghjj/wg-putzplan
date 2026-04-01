@@ -1,109 +1,127 @@
-import { db } from "./firebase";
-import { ref, set, get, remove, onValue } from "firebase/database";
+import { supabase } from "./supabase";
 
 const WG_ID = "default"; // single WG instance
 
 export const SK = { data: "wg4", photos: "wg4p", refPhotos: "wg4r" };
 
-// ---- Firebase helpers ----
-const dbRef = (key) => ref(db, `wg/${WG_ID}/${key}`);
-const dbRefPath = (path) => ref(db, `wg/${WG_ID}/${path}`);
-
+// ---- Supabase helpers ----
 export const storage = {
   async get(key) {
     try {
-      const snap = await get(dbRef(key));
-      const local = localStorage.getItem(key);
-      if (snap.exists()) {
-        const fbVal = snap.val();
-        // If Firebase has data but localStorage also has data, merge localStorage into Firebase
-        // This handles the case where photos were saved locally but not yet synced
-        if (local && key === "wg4p") {
-          const localVal = JSON.parse(local);
-          const merged = { ...localVal, ...fbVal };
-          if (Object.keys(merged).length > Object.keys(fbVal).length) {
-            await set(dbRef(key), merged);
-            return { value: JSON.stringify(merged) };
-          }
-        }
-        return { value: JSON.stringify(fbVal) };
+      const { data, error } = await supabase
+        .from("kv_store")
+        .select("value")
+        .eq("key", key)
+        .single();
+
+      if (error && error.code !== "PGRST116") {
+        // PGRST116 = no rows found (not a real error)
+        console.warn("Supabase read error:", error.message);
       }
-      // fallback: try localStorage for migration
+
+      if (data?.value) {
+        return { value: JSON.stringify(data.value) };
+      }
+
+      // Fallback: try localStorage for offline/migration
+      const local = localStorage.getItem(key);
       if (local) {
-        // migrate localStorage data to Firebase
-        await set(dbRef(key), JSON.parse(local));
+        // Migrate localStorage to Supabase
+        try {
+          await supabase.from("kv_store").upsert({
+            key,
+            value: JSON.parse(local),
+            updated_at: new Date().toISOString(),
+          });
+        } catch {}
         return { value: local };
       }
+
       return { value: null };
     } catch (e) {
-      console.warn("Firebase read failed, falling back to localStorage:", e);
+      console.warn("Supabase read failed, falling back to localStorage:", e);
       return { value: localStorage.getItem(key) };
     }
   },
 
   async set(key, value) {
     try {
-      await set(dbRef(key), JSON.parse(value));
-      // also save local backup
+      const parsed = JSON.parse(value);
+      const { error } = await supabase.from("kv_store").upsert({
+        key,
+        value: parsed,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      // Also save local backup
       localStorage.setItem(key, value);
     } catch (e) {
-      console.warn("Firebase write failed, saving to localStorage:", e);
+      console.warn("Supabase write failed, saving to localStorage:", e);
       localStorage.setItem(key, value);
     }
   },
 };
 
-// ---- RefPhoto per-key helpers (avoids 10MB Firebase limit) ----
+// ---- RefPhoto per-key helpers ----
 export const refPhotoStorage = {
-  // Save a single refPhoto by task key
   async setOne(taskKey, base64Data) {
-    // sanitize key: Firebase keys can't contain . # $ [ ]
-    const safeKey = taskKey.replace(/[.#$\[\]]/g, "_");
+    const safeKey = taskKey.replace(/[.#$\/\[\]]/g, "_");
     try {
-      await set(dbRefPath(`${SK.refPhotos}/${safeKey}`), base64Data);
-      // local cache: update the whole map in localStorage
+      const { error } = await supabase.from("ref_photos").upsert({
+        task_key: safeKey,
+        data: base64Data,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+      // Local cache
       const local = JSON.parse(localStorage.getItem(SK.refPhotos) || "{}");
       local[taskKey] = base64Data;
       localStorage.setItem(SK.refPhotos, JSON.stringify(local));
     } catch (e) {
-      console.warn("Firebase refPhoto write failed, saving locally:", e);
+      console.warn("Supabase refPhoto write failed, saving locally:", e);
       const local = JSON.parse(localStorage.getItem(SK.refPhotos) || "{}");
       local[taskKey] = base64Data;
       localStorage.setItem(SK.refPhotos, JSON.stringify(local));
     }
   },
 
-  // Delete a single refPhoto by task key
   async deleteOne(taskKey) {
-    const safeKey = taskKey.replace(/[.#$\[\]]/g, "_");
+    const safeKey = taskKey.replace(/[.#$\/\[\]]/g, "_");
     try {
-      await remove(dbRefPath(`${SK.refPhotos}/${safeKey}`));
+      await supabase.from("ref_photos").delete().eq("task_key", safeKey);
       const local = JSON.parse(localStorage.getItem(SK.refPhotos) || "{}");
       delete local[taskKey];
       localStorage.setItem(SK.refPhotos, JSON.stringify(local));
     } catch (e) {
-      console.warn("Firebase refPhoto delete failed:", e);
+      console.warn("Supabase refPhoto delete failed:", e);
       const local = JSON.parse(localStorage.getItem(SK.refPhotos) || "{}");
       delete local[taskKey];
       localStorage.setItem(SK.refPhotos, JSON.stringify(local));
     }
   },
 
-  // Get all refPhotos (returns object map)
   async getAll() {
     try {
-      const snap = await get(dbRef(SK.refPhotos));
-      if (snap.exists()) {
-        const data = snap.val();
-        // data keys may be sanitized (dots replaced with _), restore them
-        return data;
+      const { data, error } = await supabase
+        .from("ref_photos")
+        .select("task_key, data");
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const result = {};
+        data.forEach((row) => {
+          result[row.task_key] = row.data;
+        });
+        return result;
       }
-      // fallback localStorage
+
+      // Fallback localStorage
       const local = localStorage.getItem(SK.refPhotos);
       if (local) return JSON.parse(local);
       return {};
     } catch (e) {
-      console.warn("Firebase refPhoto read failed:", e);
+      console.warn("Supabase refPhoto read failed:", e);
       const local = localStorage.getItem(SK.refPhotos);
       return local ? JSON.parse(local) : {};
     }
@@ -112,7 +130,49 @@ export const refPhotoStorage = {
 
 // ---- Realtime listener ----
 export function onDataChange(key, callback) {
-  return onValue(dbRef(key), (snap) => {
-    if (snap.exists()) callback(snap.val());
-  });
+  // Subscribe to changes on kv_store for this key
+  const channelName = `kv_${key}_${Date.now()}`;
+
+  if (key === SK.refPhotos) {
+    // For refPhotos, listen to the ref_photos table
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "ref_photos" },
+        async () => {
+          // Re-fetch all ref photos on any change
+          const allPhotos = await refPhotoStorage.getAll();
+          callback(allPhotos);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }
+
+  // For kv_store keys (wg4, wg4p)
+  const channel = supabase
+    .channel(channelName)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "kv_store",
+        filter: `key=eq.${key}`,
+      },
+      (payload) => {
+        if (payload.new?.value) {
+          callback(payload.new.value);
+        }
+      }
+    )
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }

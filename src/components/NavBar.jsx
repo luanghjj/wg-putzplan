@@ -15,7 +15,7 @@ export default function NavBar({t,scr,set,user,hp,st,isC,onLogout}){
     {id:"leaderboard",icon:"🏆",l:t.leaderboard,s:true},
     {id:"reports",icon:"🚨",l:t.reports,s:true,badge:newReports>0&&(user?.role==="owner"||user?.role==="manager")?newReports:null},
     {id:"rules",icon:"📜",l:t.rules,s:true},
-    {id:"history",icon:"📊",l:t.history,s:hp("view_history")},
+    {id:"history",icon:"📊",l:t.history,s:user?.role==="owner"||user?.role==="manager"},
     {id:"admin",icon:"⚙️",l:t.admin,s:showA},
   ];
   const ni={flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:4,padding:"8px 4px",border:"none",borderRadius:12,background:"transparent",fontSize:11,fontWeight:500,color:C.textSecondary,cursor:"pointer",fontFamily:F,position:"relative",transition:"all 0.15s ease",letterSpacing:"-0.01em"};

@@ -46,13 +46,13 @@ function TaskMgr({t,st,sv,show,srp}){
   const stepPhoto=async(i,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,500,.5);updStep(i,"photo",img);};
 
   const TaskItem=({task,onDel})=>{
-    const refKey=normRefKey(task.de);const hasRef=!!st.refPhotos?.[refKey];const hasTut=st.tutorials?.[refKey]?.steps?.length>0;
+    const refKey=normRefKey(task.de);const hasRef=!!st.refPhotos?.[refKey];const tutKey=normTaskKey(task.de);const hasTut=st.tutorials?.[tutKey]?.steps?.length>0;
     return <div style={{background:"#fff",borderRadius:8,marginBottom:6,padding:"8px 10px",boxShadow:"0 1px 2px rgba(0,0,0,.03)"}}>
       <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{flex:1,fontSize:13}}>{task.de} <span style={{color:"#94A3B8",fontSize:11}}>({task.vi})</span></span><span style={{fontSize:12,color:"#F59E0B",fontWeight:700}}>+{task.pts}⭐</span><button style={delB} onClick={onDel}>×</button></div>
       <div style={{display:"flex",alignItems:"center",gap:6,marginTop:4,flexWrap:"wrap"}}>
         {hasRef?<><img src={st.refPhotos[refKey]} style={{height:36,width:52,objectFit:"cover",borderRadius:6}} alt="ref"/><span style={{fontSize:10,color:"#10B981"}}>✓ {t.refPhoto}</span><button style={{...delB,fontSize:14}} onClick={()=>dRef(task.de)}>×</button></>:<label style={{fontSize:11,color:"#3B82F6",cursor:"pointer",display:"flex",alignItems:"center",gap:3}}>📷 {t.uploadRef}<input type="file" accept="image/*" style={{display:"none"}} onChange={e=>uRef(task.de,e)}/></label>}
         <span style={{color:"#E2E8F0"}}>|</span>
-        {hasTut?<><span style={{fontSize:10,color:"#8B5CF6",fontWeight:600}}>📖 {st.tutorials[refKey].steps.length} {t.steps}</span><button style={{background:"none",border:"none",fontSize:11,color:"#8B5CF6",cursor:"pointer",fontFamily:F,padding:0}} onClick={()=>openTutEdit(task.de)}>✏️</button><button style={{...delB,fontSize:14}} onClick={()=>delTut(task.de)}>×</button></>:<button style={{background:"none",border:"none",fontSize:11,color:"#8B5CF6",cursor:"pointer",fontFamily:F,padding:0}} onClick={()=>openTutEdit(task.de)}>📖 {t.editTutorial}</button>}
+        {hasTut?<><span style={{fontSize:10,color:"#8B5CF6",fontWeight:600}}>📖 {st.tutorials[tutKey].steps.length} {t.steps}</span><button style={{background:"none",border:"none",fontSize:11,color:"#8B5CF6",cursor:"pointer",fontFamily:F,padding:0}} onClick={()=>openTutEdit(task.de)}>✏️</button><button style={{...delB,fontSize:14}} onClick={()=>delTut(task.de)}>×</button></>:<button style={{background:"none",border:"none",fontSize:11,color:"#8B5CF6",cursor:"pointer",fontFamily:F,padding:0}} onClick={()=>openTutEdit(task.de)}>📖 {t.editTutorial}</button>}
       </div>
     </div>;
   };
