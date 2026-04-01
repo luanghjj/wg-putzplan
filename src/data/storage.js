@@ -3,7 +3,6 @@ import { DEF } from "./constants";
 
 export const SK = { data: "wg4", photos: "wg4p", refPhotos: "wg4r" };
 
-// ---- Helpers ----
 const sanitizeKey = (k) => k.replace(/[.#$\/\[\]]/g, "_");
 
 // ---- Load full state from normalized tables ----
@@ -28,89 +27,39 @@ async function loadState() {
     supabase.from("reports").select("*"),
   ]);
 
-  // Build verifications object from rows
   const verifObj = {};
   (verifications || []).forEach((v) => {
     verifObj[v.vkey] = { status: v.status, by: v.by_user, reason: v.reason, at: v.at_time };
   });
 
-  // Build tutorials object from rows
   const tutObj = {};
   (tutorials || []).forEach((t) => {
     tutObj[t.task_key] = { steps: t.steps || [], videoUrl: t.video_url || "" };
   });
 
-  // Build config object from rows
   const cfg = {};
-  (configRows || []).forEach((c) => {
-    cfg[c.key] = c.value;
-  });
-
-  // Map completions from DB rows
-  const compArr = (completions || []).map((c) => ({
-    taskKey: c.task_key,
-    areaId: c.area_id,
-    person: c.person,
-    room: c.room,
-    week: c.week,
-    day: c.day,
-    month: c.month,
-    timestamp: c.timestamp,
-    pts: c.pts,
-    verified: c.verified,
-    verifiedBy: c.verified_by,
-    verifiedAt: c.verified_at,
-  }));
-
-  // Map users from DB rows
-  const usersArr = (users || []).map((u) => ({
-    id: u.id,
-    name: u.name,
-    role: u.role,
-    room: u.room,
-    roomId: u.room_id,
-    password: u.password,
-  }));
-
-  // Map rooms from DB rows
-  const roomsArr = (rooms || []).map((r) => ({
-    id: r.id,
-    name: r.name,
-    residents: r.residents || [],
-  }));
-
-  // Map announcements from DB rows
-  const annArr = (announcements || []).map((a) => ({
-    id: a.id,
-    title: a.title,
-    message: a.message,
-    author: a.author,
-    ts: a.ts,
-    readBy: a.read_by || [],
-  }));
-
-  // Map reports from DB rows
-  const repArr = (reports || []).map((r) => ({
-    id: r.id,
-    category: r.category,
-    text: r.text,
-    target: r.target,
-    reporter: r.reporter,
-    ts: r.ts,
-    week: r.week,
-    status: r.status,
-  }));
+  (configRows || []).forEach((c) => (cfg[c.key] = c.value));
 
   return {
     ...DEF,
-    users: usersArr,
-    rooms: roomsArr,
-    completions: compArr,
+    users: (users || []).map((u) => ({
+      id: u.id, name: u.name, role: u.role, room: u.room, roomId: u.room_id, password: u.password,
+    })),
+    rooms: (rooms || []).map((r) => ({ id: r.id, name: r.name, residents: r.residents || [] })),
+    completions: (completions || []).map((c) => ({
+      taskKey: c.task_key, areaId: c.area_id, person: c.person, room: c.room,
+      week: c.week, day: c.day, month: c.month, timestamp: c.timestamp,
+      pts: c.pts, verified: c.verified, verifiedBy: c.verified_by, verifiedAt: c.verified_at,
+    })),
     verifications: verifObj,
     tutorials: { ...DEF.tutorials, ...tutObj },
-    announcements: annArr,
-    reports: repArr,
-    // Config fields
+    announcements: (announcements || []).map((a) => ({
+      id: a.id, title: a.title, message: a.message, author: a.author, ts: a.ts, readBy: a.read_by || [],
+    })),
+    reports: (reports || []).map((r) => ({
+      id: r.id, category: r.category, text: r.text, target: r.target,
+      reporter: r.reporter, ts: r.ts, week: r.week, status: r.status,
+    })),
     masterPin: cfg.masterPin ?? DEF.masterPin,
     lang: cfg.lang ?? DEF.lang,
     penalty: cfg.penalty ?? DEF.penalty,
@@ -124,168 +73,176 @@ async function loadState() {
   };
 }
 
-// ---- Save full state: diff & write to normalized tables ----
+// ---- Optimized save: only write changed parts ----
+let _lastSaved = null;
+
 async function saveState(ns) {
+  const prev = _lastSaved || {};
   const promises = [];
 
-  // Save users — upsert all, delete removed
-  promises.push(
-    supabase.from("users").upsert(
-      ns.users.map((u) => ({
-        id: u.id,
-        name: u.name,
-        role: u.role,
-        room: u.room || null,
-        room_id: u.roomId || null,
-        password: u.password,
-      }))
-    )
-  );
+  // Users — only if changed
+  if (JSON.stringify(ns.users) !== JSON.stringify(prev.users)) {
+    promises.push(
+      (async () => {
+        const prevIds = (prev.users || []).map((u) => u.id);
+        const newIds = ns.users.map((u) => u.id);
+        const removed = prevIds.filter((id) => !newIds.includes(id));
+        if (removed.length) await supabase.from("users").delete().in("id", removed);
+        if (ns.users.length) {
+          await supabase.from("users").upsert(
+            ns.users.map((u) => ({
+              id: u.id, name: u.name, role: u.role,
+              room: u.room || null, room_id: u.roomId || null, password: u.password,
+            }))
+          );
+        }
+      })()
+    );
+  }
 
-  // Save rooms
-  promises.push(
-    supabase.from("rooms").upsert(
-      ns.rooms.map((r) => ({
-        id: r.id,
-        name: r.name,
-        residents: r.residents || [],
-      }))
-    )
-  );
+  // Rooms — only if changed
+  if (JSON.stringify(ns.rooms) !== JSON.stringify(prev.rooms)) {
+    promises.push(
+      (async () => {
+        const prevIds = (prev.rooms || []).map((r) => r.id);
+        const newIds = ns.rooms.map((r) => r.id);
+        const removed = prevIds.filter((id) => !newIds.includes(id));
+        if (removed.length) await supabase.from("rooms").delete().in("id", removed);
+        if (ns.rooms.length) {
+          await supabase.from("rooms").upsert(
+            ns.rooms.map((r) => ({ id: r.id, name: r.name, residents: r.residents || [] }))
+          );
+        }
+      })()
+    );
+  }
 
-  // Save completions: delete all, then insert fresh
-  promises.push(
-    (async () => {
-      await supabase.from("completions").delete().neq("id", 0);
-      if (ns.completions.length > 0) {
-        await supabase.from("completions").insert(
-          ns.completions.map((c) => ({
-            task_key: c.taskKey,
-            area_id: c.areaId || "daily",
-            person: c.person,
-            room: c.room,
-            week: c.week,
-            day: c.day || null,
-            month: c.month || null,
-            timestamp: c.timestamp,
-            pts: c.pts || 1,
-            verified: c.verified || false,
-            verified_by: c.verifiedBy || null,
-            verified_at: c.verifiedAt || null,
-          }))
-        );
-      }
-    })()
-  );
+  // Completions — only if changed
+  if (JSON.stringify(ns.completions) !== JSON.stringify(prev.completions)) {
+    promises.push(
+      (async () => {
+        await supabase.from("completions").delete().neq("id", 0);
+        if (ns.completions.length > 0) {
+          // Batch insert in chunks of 100
+          for (let i = 0; i < ns.completions.length; i += 100) {
+            const batch = ns.completions.slice(i, i + 100);
+            await supabase.from("completions").insert(
+              batch.map((c) => ({
+                task_key: c.taskKey, area_id: c.areaId || "daily", person: c.person,
+                room: c.room || null, week: c.week, day: c.day || null,
+                month: c.month || null, timestamp: c.timestamp, pts: c.pts || 1,
+                verified: c.verified || false, verified_by: c.verifiedBy || null,
+                verified_at: c.verifiedAt || null,
+              }))
+            );
+          }
+        }
+      })()
+    );
+  }
 
-  // Save verifications: delete all, then insert fresh
-  promises.push(
-    (async () => {
-      await supabase.from("verifications").delete().neq("vkey", "");
-      const vEntries = Object.entries(ns.verifications || {});
-      if (vEntries.length > 0) {
-        await supabase.from("verifications").insert(
-          vEntries.map(([k, v]) => ({
-            vkey: k,
-            status: v.status,
-            by_user: v.by,
-            reason: v.reason || null,
-            at_time: v.at,
-          }))
-        );
-      }
-    })()
-  );
+  // Verifications — only if changed
+  if (JSON.stringify(ns.verifications) !== JSON.stringify(prev.verifications)) {
+    promises.push(
+      (async () => {
+        const vEntries = Object.entries(ns.verifications || {});
+        // Upsert all current verifications
+        if (vEntries.length > 0) {
+          await supabase.from("verifications").upsert(
+            vEntries.map(([k, v]) => ({
+              vkey: k, status: v.status, by_user: v.by, reason: v.reason || null, at_time: v.at,
+            }))
+          );
+        }
+        // Delete removed
+        const prevKeys = Object.keys(prev.verifications || {});
+        const newKeys = Object.keys(ns.verifications || {});
+        const removed = prevKeys.filter((k) => !newKeys.includes(k));
+        if (removed.length) await supabase.from("verifications").delete().in("vkey", removed);
+      })()
+    );
+  }
 
-  // Save tutorials
-  promises.push(
-    (async () => {
-      const tutEntries = Object.entries(ns.tutorials || {});
-      if (tutEntries.length > 0) {
-        await supabase.from("tutorials").upsert(
-          tutEntries.map(([k, v]) => ({
-            task_key: sanitizeKey(k),
-            steps: v.steps || [],
-            video_url: v.videoUrl || null,
-          }))
-        );
-      }
-    })()
-  );
+  // Tutorials — only if changed
+  if (JSON.stringify(ns.tutorials) !== JSON.stringify(prev.tutorials)) {
+    promises.push(
+      supabase.from("tutorials").upsert(
+        Object.entries(ns.tutorials || {}).map(([k, v]) => ({
+          task_key: sanitizeKey(k), steps: v.steps || [], video_url: v.videoUrl || null,
+        }))
+      )
+    );
+  }
 
-  // Save config fields
+  // Config — always save (cheap, small data)
   const configFields = {
-    masterPin: ns.masterPin,
-    lang: ns.lang,
-    penalty: ns.penalty,
-    reward: ns.reward,
-    sheetsUrl: ns.sheetsUrl,
-    rotation: ns.rotation,
-    dailyTasks: ns.dailyTasks,
-    weeklyAreas: ns.weeklyAreas,
-    rolePerms: ns.rolePerms,
-    fairness: ns.fairness,
+    masterPin: ns.masterPin, lang: ns.lang, penalty: ns.penalty,
+    reward: ns.reward, sheetsUrl: ns.sheetsUrl, rotation: ns.rotation,
+    dailyTasks: ns.dailyTasks, weeklyAreas: ns.weeklyAreas,
+    rolePerms: ns.rolePerms, fairness: ns.fairness,
   };
   promises.push(
     supabase.from("config").upsert(
-      Object.entries(configFields).map(([k, v]) => ({
-        key: k,
-        value: v,
-        updated_at: new Date().toISOString(),
-      }))
+      Object.entries(configFields)
+        .filter(([, v]) => v !== undefined)
+        .map(([k, v]) => ({ key: k, value: v, updated_at: new Date().toISOString() }))
     )
   );
 
-  // Save announcements
-  promises.push(
-    (async () => {
-      await supabase.from("announcements").delete().neq("id", "");
-      const anns = ns.announcements || [];
-      if (anns.length > 0) {
-        await supabase.from("announcements").insert(
-          anns.map((a) => ({
-            id: a.id,
-            title: a.title || null,
-            message: a.message || null,
-            author: a.author || null,
-            ts: a.ts || null,
-            read_by: a.readBy || [],
-          }))
-        );
-      }
-    })()
-  );
+  // Announcements — only if changed
+  if (JSON.stringify(ns.announcements) !== JSON.stringify(prev.announcements)) {
+    promises.push(
+      (async () => {
+        const anns = ns.announcements || [];
+        if (anns.length > 0) {
+          await supabase.from("announcements").upsert(
+            anns.map((a) => ({
+              id: a.id, title: a.title || null, message: a.message || null,
+              author: a.author || null, ts: a.ts || null, read_by: a.readBy || [],
+            }))
+          );
+        }
+        // Delete removed
+        const prevIds = (prev.announcements || []).map((a) => a.id);
+        const newIds = anns.map((a) => a.id);
+        const removed = prevIds.filter((id) => !newIds.includes(id));
+        if (removed.length) await supabase.from("announcements").delete().in("id", removed);
+      })()
+    );
+  }
 
-  // Save reports
-  promises.push(
-    (async () => {
-      await supabase.from("reports").delete().neq("id", "");
-      const reps = ns.reports || [];
-      if (reps.length > 0) {
-        await supabase.from("reports").insert(
-          reps.map((r) => ({
-            id: r.id,
-            category: r.category || null,
-            text: r.text || null,
-            target: r.target || null,
-            reporter: r.reporter || null,
-            ts: r.ts || null,
-            week: r.week || null,
-            status: r.status || "new",
-          }))
-        );
-      }
-    })()
-  );
+  // Reports — only if changed
+  if (JSON.stringify(ns.reports) !== JSON.stringify(prev.reports)) {
+    promises.push(
+      (async () => {
+        const reps = ns.reports || [];
+        if (reps.length > 0) {
+          await supabase.from("reports").upsert(
+            reps.map((r) => ({
+              id: r.id, category: r.category || null, text: r.text || null,
+              target: r.target || null, reporter: r.reporter || null,
+              ts: r.ts || null, week: r.week || null, status: r.status || "new",
+            }))
+          );
+        }
+        const prevIds = (prev.reports || []).map((r) => r.id);
+        const newIds = reps.map((r) => r.id);
+        const removed = prevIds.filter((id) => !newIds.includes(id));
+        if (removed.length) await supabase.from("reports").delete().in("id", removed);
+      })()
+    );
+  }
 
   await Promise.all(promises);
+  _lastSaved = JSON.parse(JSON.stringify(ns)); // deep clone for next diff
 }
 
-// ---- Public API (same interface as before) ----
+// ---- Public API ----
 export const storage = {
   async get(key) {
     if (key === SK.data) {
       const state = await loadState();
+      _lastSaved = JSON.parse(JSON.stringify(state)); // cache for diff
       return { value: JSON.stringify(state) };
     }
     if (key === SK.photos) {
@@ -304,16 +261,17 @@ export const storage = {
       return;
     }
     if (key === SK.photos) {
-      // Delete all photos, then insert fresh
-      await supabase.from("photos").delete().neq("key", "");
+      // Upsert changed photos, delete removed
+      const { data: existing } = await supabase.from("photos").select("key");
+      const existingKeys = (existing || []).map((p) => p.key);
+      const newKeys = Object.keys(parsed);
+      const removed = existingKeys.filter((k) => !newKeys.includes(k));
+      if (removed.length) await supabase.from("photos").delete().in("key", removed);
       const entries = Object.entries(parsed);
       if (entries.length > 0) {
-        // Insert in batches of 50 to avoid payload limits
         for (let i = 0; i < entries.length; i += 50) {
           const batch = entries.slice(i, i + 50);
-          await supabase.from("photos").upsert(
-            batch.map(([k, v]) => ({ key: k, data: v }))
-          );
+          await supabase.from("photos").upsert(batch.map(([k, v]) => ({ key: k, data: v })));
         }
       }
       return;
@@ -321,22 +279,16 @@ export const storage = {
   },
 };
 
-// ---- RefPhoto per-key helpers ----
+// ---- RefPhoto helpers ----
 export const refPhotoStorage = {
   async setOne(taskKey, base64Data) {
-    const safeKey = sanitizeKey(taskKey);
     await supabase.from("ref_photos").upsert({
-      task_key: safeKey,
-      data: base64Data,
-      updated_at: new Date().toISOString(),
+      task_key: sanitizeKey(taskKey), data: base64Data, updated_at: new Date().toISOString(),
     });
   },
-
   async deleteOne(taskKey) {
-    const safeKey = sanitizeKey(taskKey);
-    await supabase.from("ref_photos").delete().eq("task_key", safeKey);
+    await supabase.from("ref_photos").delete().eq("task_key", sanitizeKey(taskKey));
   },
-
   async getAll() {
     const { data } = await supabase.from("ref_photos").select("task_key, data");
     const result = {};
@@ -346,41 +298,44 @@ export const refPhotoStorage = {
 };
 
 // ---- Realtime listener ----
+let _realtimeDebounce = null;
+
 export function onDataChange(key, callback) {
   const ts = Date.now();
 
   if (key === SK.refPhotos) {
-    const ch = supabase
-      .channel(`rp_${ts}`)
+    const ch = supabase.channel(`rp_${ts}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "ref_photos" }, async () => {
         callback(await refPhotoStorage.getAll());
-      })
-      .subscribe();
+      }).subscribe();
     return () => supabase.removeChannel(ch);
   }
 
   if (key === SK.photos) {
-    const ch = supabase
-      .channel(`ph_${ts}`)
+    const ch = supabase.channel(`ph_${ts}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "photos" }, async () => {
         const { data } = await supabase.from("photos").select("key, data");
         const obj = {};
         (data || []).forEach((p) => (obj[p.key] = p.data));
         callback(obj);
-      })
-      .subscribe();
+      }).subscribe();
     return () => supabase.removeChannel(ch);
   }
 
-  // For main data — listen to all relevant tables
+  // Main data — debounced: multiple table changes trigger single reload
   const tables = ["users", "rooms", "completions", "verifications", "tutorials", "config", "announcements", "reports"];
+  const debouncedReload = () => {
+    clearTimeout(_realtimeDebounce);
+    _realtimeDebounce = setTimeout(async () => {
+      const state = await loadState();
+      _lastSaved = JSON.parse(JSON.stringify(state));
+      callback(state);
+    }, 300); // 300ms debounce — combines multiple rapid changes
+  };
+
   const channels = tables.map((table) =>
-    supabase
-      .channel(`${table}_${ts}`)
-      .on("postgres_changes", { event: "*", schema: "public", table }, async () => {
-        const state = await loadState();
-        callback(state);
-      })
+    supabase.channel(`${table}_${ts}`)
+      .on("postgres_changes", { event: "*", schema: "public", table }, debouncedReload)
       .subscribe()
   );
 
