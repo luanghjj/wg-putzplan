@@ -86,17 +86,40 @@ export default function ReportScreen({t,st,sv,user,show}){
   const fd=(ts)=>new Date(ts).toLocaleDateString(st.lang==="de"?"de-DE":"vi-VN",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
 
   return <div>
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-      <h2 style={{fontSize:20,color:C.text,margin:0,fontFamily:F,letterSpacing:"-0.022em"}}>🚨 {t.reports}</h2>
-      <button style={{...btnP,fontSize:13,padding:"8px 16px"}} onClick={()=>setForm(!form)}>+ {t.newReport}</button>
+    {/* Header */}
+    <div style={{marginBottom:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <h2 style={{fontSize:22,fontWeight:800,color:C.text,margin:0,fontFamily:F,letterSpacing:"-0.02em"}}>{t.reports}</h2>
+        <button style={{...btnP,fontSize:13,padding:"8px 18px",background:"linear-gradient(135deg,#1C1C1E,#3A3A3C)"}} onClick={()=>setForm(!form)}>🔒 {t.newReport}</button>
+      </div>
+      {/* Anonymous badge — always visible */}
+      <div style={{
+        display:"flex",alignItems:"center",gap:10,
+        padding:"12px 16px",borderRadius:14,
+        background:"linear-gradient(135deg,rgba(48,209,88,0.08),rgba(0,122,255,0.06))",
+        border:"1px solid rgba(48,209,88,0.15)",
+      }}>
+        <div style={{
+          width:36,height:36,borderRadius:10,flexShrink:0,
+          background:"linear-gradient(135deg,#30D158,#007AFF)",
+          display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,
+        }}>🔒</div>
+        <div>
+          <div style={{fontSize:14,fontWeight:700,color:C.text}}>{t.reportAnonShort||"Ẩn danh"}</div>
+          <div style={{fontSize:12,color:C.textSecondary,marginTop:1}}>{t.reportAnon}</div>
+        </div>
+      </div>
     </div>
 
     {/* New report form */}
-    {form&&<div style={{background:"rgba(255,255,255,0.85)",backdropFilter:"blur(20px)",borderRadius:18,padding:18,marginBottom:16,boxShadow:C.shadowSm,border:`1px solid ${C.border}`,animation:"fadeUp .25s ease"}}>
-      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-        <span style={{fontSize:20}}>📝</span>
-        <h3 style={{margin:0,fontSize:16,fontFamily:F,color:C.text,fontWeight:700}}>{t.newReport}</h3>
-        <span style={{marginLeft:"auto",fontSize:11,color:C.textSecondary,background:"rgba(0,0,0,0.03)",padding:"3px 8px",borderRadius:6}}>🔒 {t.reportAnon}</span>
+    {form&&<div style={{background:C.white,borderRadius:18,padding:18,marginBottom:16,boxShadow:C.shadowMd,overflow:"hidden",animation:"fadeUp .25s ease"}}>
+      {/* Privacy banner */}
+      <div style={{margin:"-18px -18px 16px",padding:"14px 18px",background:"linear-gradient(135deg,#1C1C1E,#2C2C2E)",display:"flex",alignItems:"center",gap:12}}>
+        <span style={{fontSize:24}}>🔒</span>
+        <div>
+          <div style={{fontSize:14,fontWeight:700,color:"#fff",letterSpacing:"-0.01em"}}>{t.newReport}</div>
+          <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",marginTop:2}}>{t.reportAnon}</div>
+        </div>
       </div>
 
       {/* Category */}
@@ -135,8 +158,8 @@ export default function ReportScreen({t,st,sv,user,show}){
       {!canSend&&<p style={{color:C.red,fontSize:12,marginTop:6}}>⚠️ {t.reportLimit}</p>}
 
       <div style={{display:"flex",gap:8,marginTop:8}}>
-        <button style={{...btnG,flex:1}} onClick={()=>{setForm(false);closeCam();}}>{t.cancel}</button>
-        <button style={{...btnP,flex:1,opacity:canSend?1:0.5}} onClick={canSend?send:undefined}>{t.sendReport}</button>
+        <button style={{...btnG,flex:1,background:"rgba(120,120,128,0.08)",color:C.textSecondary}} onClick={()=>{setForm(false);closeCam();}}>{t.cancel}</button>
+        <button style={{...btnP,flex:1,opacity:canSend?1:0.5,background:"linear-gradient(135deg,#1C1C1E,#3A3A3C)"}} onClick={canSend?send:undefined}>🔒 {t.sendReport}</button>
       </div>
     </div>}
 
@@ -156,7 +179,7 @@ export default function ReportScreen({t,st,sv,user,show}){
     <div>
       {reports.map(r=>{
         const showReporter=isAdmin;
-        return <div key={r.id} style={{background:"rgba(255,255,255,0.72)",backdropFilter:"blur(20px)",borderRadius:14,padding:14,marginBottom:8,boxShadow:C.shadowSm,border:`1px solid ${r.status==="new"?"rgba(59,130,246,0.2)":C.border}`,animation:"fadeUp 0.2s ease"}}>
+        return <div key={r.id} style={{background:C.white,borderRadius:14,padding:14,marginBottom:8,boxShadow:C.shadowSm,borderLeft:`3px solid ${STATUS_COLORS[r.status]}`,animation:"fadeUp 0.2s ease"}}>
           {/* Header */}
           <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
             <span style={{fontSize:11,fontWeight:700,color:STATUS_COLORS[r.status],background:`${STATUS_COLORS[r.status]}15`,padding:"3px 8px",borderRadius:6}}>{STATUS_ICONS[r.status]} {statusLabel(r.status)}</span>
