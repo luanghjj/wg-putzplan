@@ -39,6 +39,20 @@ export default function App() {
   const [pinM, setPinM] = useState(null);
   const [phView, setPhView] = useState(null);
   const [tutView, setTutView] = useState(null);
+  // Sanitize state: ensure arrays are never null
+  const safeSt = (d) => ({
+    ...d,
+    users: d.users || [],
+    rooms: d.rooms || [],
+    completions: d.completions || [],
+    weeklyAreas: d.weeklyAreas || DEF.weeklyAreas,
+    dailyTasks: d.dailyTasks || DEF.dailyTasks,
+    announcements: d.announcements || [],
+    reports: d.reports || [],
+    verifications: d.verifications || {},
+    tutorials: d.tutorials || {},
+    rolePerms: d.rolePerms || DEF.rolePerms,
+  });
   const skipSync = useRef(false);
   useEffect(() => {
     (async () => {
@@ -49,8 +63,13 @@ export default function App() {
         if (r?.value) {
           const d = JSON.parse(r.value);
           if (!d.users?.some(u => u.id === "owner-1")) d.users = [{ ...OWNER }, ...(d.users || [])];
-          setSt({ ...DEF, ...d });
-        } else setSt({ ...DEF });
+          const s = safeSt({ ...DEF, ...d });
+          setSt(s);
+          // Validate auto-login user still exists
+          if (user && !s.users.find(u => u.password === user.password)) {
+            setUser(null); setScr('login'); localStorage.removeItem('wg_user');
+          }
+        } else setSt(safeSt({ ...DEF }));
         if (p?.value) setPh(JSON.parse(p.value));
       } catch (e) { console.error('Load error:', e); setSt({ ...DEF }); } setLd(false);
     })();
@@ -59,7 +78,7 @@ export default function App() {
   useEffect(() => {
     const unsub1 = onDataChange(SK.data, (val) => {
       if (skipSync.current) { skipSync.current = false; return; }
-      const d = { ...DEF, ...val };
+      const d = safeSt({ ...DEF, ...val });
       if (!d.users?.some(u => u.id === "owner-1")) d.users = [{ ...OWNER }, ...(d.users || [])];
       setSt(d);
     });
