@@ -119,25 +119,32 @@ async function saveState(ns) {
     );
   }
 
-  // Completions — only if changed
+  // Completions — safe upsert + delete removed (NEVER delete all first)
   if (JSON.stringify(ns.completions) !== JSON.stringify(prev.completions)) {
     promises.push(
       (async () => {
-        await supabase.from("completions").delete().neq("id", 0);
         if (ns.completions.length > 0) {
-          // Batch insert in chunks of 100
+          // Upsert in batches of 100 — uses timestamp as unique conflict key
           for (let i = 0; i < ns.completions.length; i += 100) {
             const batch = ns.completions.slice(i, i + 100);
-            await supabase.from("completions").insert(
+            await supabase.from("completions").upsert(
               batch.map((c) => ({
                 task_key: c.taskKey, area_id: c.areaId || "daily", person: c.person,
                 room: c.room || null, week: c.week, day: c.day || null,
                 month: c.month || null, timestamp: c.timestamp, pts: c.pts || 1,
                 verified: c.verified || false, verified_by: c.verifiedBy || null,
                 verified_at: c.verifiedAt || null,
-              }))
+              })),
+              { onConflict: "timestamp" }
             );
           }
+        }
+        // Only delete records that were explicitly removed (present in prev but not in ns)
+        const prevTs = (prev.completions || []).map((c) => c.timestamp);
+        const newTs = new Set(ns.completions.map((c) => c.timestamp));
+        const removed = prevTs.filter((ts) => !newTs.has(ts));
+        if (removed.length) {
+          await supabase.from("completions").delete().in("timestamp", removed);
         }
       })()
     );
