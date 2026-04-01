@@ -291,9 +291,76 @@ function SheetsCfg({t,st,sv,rpin}){
   </div>;
 }
 
+// Manager photo upload component
+function ManagerPhotos({t,st,sv,show}){
+  const managers=st.users.filter(u=>u.role==="manager");
+  const isVi=st.lang==="vi";
+
+  const handlePhoto=async(idx)=>{
+    const input=document.createElement("input");
+    input.type="file";input.accept="image/*";
+    input.onchange=async(e)=>{
+      const file=e.target.files[0];
+      if(!file)return;
+      const reader=new FileReader();
+      reader.onload=(ev)=>{
+        const img=new Image();
+        img.onload=()=>{
+          const c=document.createElement("canvas");
+          const maxW=300;const rt=Math.min(maxW/img.width,maxW/img.height,1);
+          c.width=img.width*rt;c.height=img.height*rt;
+          c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+          const data=c.toDataURL("image/jpeg",0.7);
+          sv({...st,[`managerPhoto${idx}`]:data});
+          show(isVi?"✓ Đã cập nhật ảnh":"✓ Foto aktualisiert");
+        };
+        img.src=ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  };
+
+  const removePhoto=(idx)=>{
+    sv({...st,[`managerPhoto${idx}`]:null});
+    show(isVi?"✓ Đã xóa ảnh":"✓ Foto gelöscht");
+  };
+
+  return <div style={{background:"#fff",borderRadius:14,padding:16}}>
+    <h3 style={{fontSize:15,fontWeight:700,color:C.text,margin:"0 0 12px",fontFamily:F}}>
+      📸 {isVi?"Ảnh quản lý (hiện trên Nội quy)":"Manager-Fotos (auf Hausordnung)"}
+    </h3>
+    <p style={{fontSize:12,color:C.textSecondary,marginBottom:14}}>
+      {isVi?"2 ảnh này sẽ hiện ở đầu trang Nội quy":"Diese 2 Fotos werden oben auf der Hausordnung angezeigt"}
+    </p>
+    <div style={{display:"flex",gap:16,justifyContent:"center",flexWrap:"wrap"}}>
+      {[1,2].map(idx=>{
+        const photo=st[`managerPhoto${idx}`];
+        const mgr=managers[idx-1];
+        return <div key={idx} style={{textAlign:"center"}}>
+          <div style={{width:120,height:120,borderRadius:18,overflow:"hidden",border:`3px solid ${C.border}`,margin:"0 auto 8px",background:"rgba(0,0,0,0.03)",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",position:"relative"}} onClick={()=>handlePhoto(idx)}>
+            {photo?<img src={photo} alt={`Manager ${idx}`} style={{width:"100%",height:"100%",objectFit:"cover"}}/>
+            :<div style={{color:C.textSecondary,fontSize:13,textAlign:"center"}}><div style={{fontSize:32,marginBottom:4}}>📷</div>{isVi?"Bấm để chọn ảnh":"Foto wählen"}</div>}
+          </div>
+          <div style={{fontSize:13,fontWeight:600,color:C.text}}>{mgr?.name||(isVi?`Quản lý ${idx}`:`Manager ${idx}`)}</div>
+          <div style={{fontSize:11,color:C.textSecondary,marginBottom:6}}>{mgr?.room||""}</div>
+          <div style={{display:"flex",gap:4,justifyContent:"center"}}>
+            <button style={{background:C.accent,color:"#fff",border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",fontFamily:F}} onClick={()=>handlePhoto(idx)}>
+              {photo?(isVi?"Đổi ảnh":"Ändern"):(isVi?"Chọn ảnh":"Wählen")}
+            </button>
+            {photo&&<button style={{background:"rgba(255,59,48,0.1)",color:C.red,border:"none",borderRadius:8,padding:"4px 10px",fontSize:11,cursor:"pointer",fontFamily:F}} onClick={()=>removePhoto(idx)}>
+              {isVi?"Xóa":"Löschen"}
+            </button>}
+          </div>
+        </div>;
+      })}
+    </div>
+  </div>;
+}
+
 export default function AdminScreen({t,st,sv,hp,rpin,show,user,srp}){
   const[tab,setTab]=useState("rooms");
-  const tabs=[{id:"accounts",l:`👥 ${st.lang==="de"?"Konten":"Tài khoản"}`,s:user?.role==="owner"},{id:"rooms",l:`🚪 ${t.rooms}`,s:hp("manage_rooms")||hp("manage_residents")},{id:"tasks",l:`✏️ ${t.customTasks}`,s:hp("edit_tasks")},{id:"roles",l:`👥 ${t.roleManagement}`,s:hp("manage_roles")},{id:"perms",l:`🔒 ${t.permissions}`,s:hp("manage_roles")},{id:"bonus",l:`⭐ ${t.bonus}`,s:hp("manage_rooms")},{id:"sheets",l:"📊 Sheets",s:hp("config_sheets")},{id:"pin",l:"🔐 PIN",s:hp("manage_roles")},{id:"sync",l:"🔄 Sync",s:user?.role==="owner"},{id:"announce",l:"📢 "+({de:"Thông báo",vi:"Thông báo"}[st.lang]||"Ankündigungen"),s:user?.role==="owner"}];
+  const tabs=[{id:"accounts",l:`👥 ${st.lang==="de"?"Konten":"Tài khoản"}`,s:user?.role==="owner"},{id:"rooms",l:`🚪 ${t.rooms}`,s:hp("manage_rooms")||hp("manage_residents")},{id:"tasks",l:`✏️ ${t.customTasks}`,s:hp("edit_tasks")},{id:"roles",l:`👥 ${t.roleManagement}`,s:hp("manage_roles")},{id:"perms",l:`🔒 ${t.permissions}`,s:hp("manage_roles")},{id:"bonus",l:`⭐ ${t.bonus}`,s:hp("manage_rooms")},{id:"sheets",l:"📊 Sheets",s:hp("config_sheets")},{id:"pin",l:"🔐 PIN",s:hp("manage_roles")},{id:"sync",l:"🔄 Sync",s:user?.role==="owner"},{id:"announce",l:"📢 "+({de:"Thông báo",vi:"Thông báo"}[st.lang]||"Ankündigungen"),s:user?.role==="owner"},{id:"mgr_photos",l:"📸 "+({de:"QL Fotos",vi:"Ảnh QL"}[st.lang]||"Manager"),s:user?.role==="owner"}];
   const doSync=()=>{sv({...st});show("✓ Dữ liệu được đồng bộ");};
   return <div>
     <h2 style={{fontSize:20,color:"#1E293B",margin:"0 0 14px",fontFamily:F}}>⚙️ {t.admin}</h2>
@@ -306,7 +373,8 @@ export default function AdminScreen({t,st,sv,hp,rpin,show,user,srp}){
     {tab==="bonus"&&<BonusCfg t={t} st={st} sv={sv} rpin={rpin} show={show}/>}
     {tab==="sheets"&&<SheetsCfg t={t} st={st} sv={sv} rpin={rpin}/>}
     {tab==="pin"&&<PinChg t={t} st={st} sv={sv} rpin={rpin} show={show}/>}
-    {tab==="sync"&&<div style={{background:"#fff",borderRadius:12,padding:16}}><p style={{fontSize:13,color:"#64748B",marginBottom:12}}>Bấn nút để đồng bộ tất cả dữ liệu (tutorials + references) lên Firebase Database</p><button style={{...btnP}} onClick={doSync}>🔄 Sync tất cả lên Firebase</button></div>}
+    {tab==="sync"&&<div style={{background:"#fff",borderRadius:12,padding:16}}><p style={{fontSize:13,color:"#64748B",marginBottom:12}}>Bấm nút để đồng bộ tất cả dữ liệu lên Supabase</p><button style={{...btnP}} onClick={doSync}>🔄 Sync tất cả lên Supabase</button></div>}
     {tab==="announce"&&<AnnouncementAdmin t={t} st={st} sv={sv} user={user} show={show}/>}
+    {tab==="mgr_photos"&&<ManagerPhotos t={t} st={st} sv={sv} show={show}/>}
   </div>;
 }

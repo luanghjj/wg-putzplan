@@ -70,6 +70,8 @@ async function loadState() {
     weeklyAreas: cfg.weeklyAreas ?? DEF.weeklyAreas,
     rolePerms: cfg.rolePerms ?? DEF.rolePerms,
     fairness: cfg.fairness ?? DEF.fairness,
+    managerPhoto1: cfg.managerPhoto1 ?? null,
+    managerPhoto2: cfg.managerPhoto2 ?? null,
   };
 }
 
@@ -180,6 +182,7 @@ async function saveState(ns) {
     reward: ns.reward, sheetsUrl: ns.sheetsUrl, rotation: ns.rotation,
     dailyTasks: ns.dailyTasks, weeklyAreas: ns.weeklyAreas,
     rolePerms: ns.rolePerms, fairness: ns.fairness,
+    managerPhoto1: ns.managerPhoto1, managerPhoto2: ns.managerPhoto2,
   };
   promises.push(
     supabase.from("config").upsert(
