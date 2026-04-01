@@ -54,7 +54,7 @@ async function loadState() {
     verifications: verifObj,
     tutorials: { ...DEF.tutorials, ...tutObj },
     announcements: (announcements || []).map((a) => ({
-      id: a.id, title: a.title, message: a.message, author: a.author, ts: a.ts, readBy: a.read_by || [],
+      id: a.id, title: a.title, body: a.message, createdBy: a.author, createdAt: a.ts, level: a.level || "normal", readBy: a.read_by || [],
     })),
     reports: (reports || []).map((r) => ({
       id: r.id, category: r.category, text: r.text, target: r.target,
@@ -198,8 +198,8 @@ async function saveState(ns) {
         if (anns.length > 0) {
           await supabase.from("announcements").upsert(
             anns.map((a) => ({
-              id: a.id, title: a.title || null, message: a.message || null,
-              author: a.author || null, ts: a.ts || null, read_by: a.readBy || [],
+              id: a.id, title: a.title || null, message: a.body || null,
+              author: a.createdBy || null, ts: a.createdAt || null, read_by: a.readBy || [],
             }))
           );
         }

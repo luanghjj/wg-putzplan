@@ -111,7 +111,7 @@ export default function LeaderScreen({t,st,user}){
         // Calc min points: total room points assigned ÷ residents
         const rr=roomReports.find(x=>x.room.id===room.id);
         const totalRoomPts=rr?rr.taskDetails.reduce((s,td)=>s+td.task.pts,0):0;
-        const minPts=Math.ceil(totalRoomPts/residents.length);
+        const minPts=10; // Fixed fairness minimum: 10⭐ per person per week
         const maxDiff=st.maxDiffPercent||30;
         const maxPts=Math.max(...residents.map(r=>r.pts));
         const minEarned=Math.min(...residents.map(r=>r.pts));
@@ -155,9 +155,7 @@ export default function LeaderScreen({t,st,user}){
         st.rooms.forEach(room=>{
           const residents=(room.residents||[]).map(r=>({...r,pts:st.completions.filter(c=>c.person===r.name&&c.week==wk).reduce((s,c)=>s+(c.pts||1),0)}));
           if(residents.length<2)return;
-          const rr=roomReports.find(x=>x.room.id===room.id);
-          const totalRoomPts=rr?rr.taskDetails.reduce((s,td)=>s+td.task.pts,0):0;
-          const minPts=Math.ceil(totalRoomPts/residents.length);
+          const minPts=10;
           residents.forEach(r=>{if(r.pts<minPts)totalPersonPen+=(minPts-r.pts)*(st.penaltyPerMissingPoint||2);});
         });
         return totalPersonPen>0?<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0 0",marginTop:4,borderTop:`2px solid ${C.border}`}}><strong style={{fontSize:13,color:C.text}}>{t.penaltyTotal} ({t.fairness})</strong><strong style={{fontSize:15,color:C.red}}>{totalPersonPen.toFixed(2)}€</strong></div>:

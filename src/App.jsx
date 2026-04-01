@@ -28,8 +28,12 @@ export default function App() {
   const [st, setSt] = useState(null);
   const [ph, setPh] = useState({});
   const [rp, setRp] = useState({});
-  const [user, setUser] = useState(null);
-  const [scr, setScr] = useState("login");
+  const [user, setUser] = useState(() => {
+    try { const s = localStorage.getItem('wg_user'); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+  const [scr, setScr] = useState(() => {
+    try { return localStorage.getItem('wg_user') ? 'plan' : 'login'; } catch { return 'login'; }
+  });
   const [ld, setLd] = useState(true);
   const [toast, setToast] = useState(null);
   const [pinM, setPinM] = useState(null);
@@ -154,7 +158,8 @@ export default function App() {
     });
     if (!completion) return;
     const all = [...st.dailyTasks, ...st.weeklyAreas.flatMap(a => a.tasks)];
-    const pts = all.find(x => x.de === tk)?.pts || 1;
+    const basePts = all.find(x => x.de === tk)?.pts || 1;
+    const bonusPts = Math.round(basePts * 1.2 * 10) / 10; // +20% verified bonus
     const updatedCompletions = st.completions.map(c => {
       if (c.taskKey !== tk || (c.areaId || "daily") !== (ai || "daily")) return c;
       if (isDaily) {
@@ -165,10 +170,10 @@ export default function App() {
         if (c.week !== compWeek) return c;
         if (person && c.person !== person) return c;
       }
-      return { ...c, pts, verified: true, verifiedBy: by, verifiedAt: Date.now() };
+      return { ...c, pts: bonusPts, verified: true, verifiedBy: by, verifiedAt: Date.now() };
     });
     await sv({ ...st, completions: updatedCompletions, verifications: { ...(st.verifications || {}), [key]: { status: "verified", by, at: Date.now() } } });
-    show(st.lang === "de" ? `✓ Bestätigt! +${pts} Punkte` : `✓ Xác nhận thành công! +${pts} Điểm`);
+    show(st.lang === "de" ? `✓ Bestätigt! +${bonusPts} Punkte (+20%)` : `✓ Xác nhận! +${bonusPts} Điểm (+20%)`);
   };
   // doReject: params={tk, ai, by, reason, person, compDay, compWeek}
   const doReject = async (params) => {
@@ -193,8 +198,11 @@ export default function App() {
       }),
       verifications: { ...(st.verifications || {}), [key]: { status: "rejected", by, reason, at: Date.now() } }
     };
+    // Add -1⭐ penalty completion for reject
+    const penaltyEntry = { taskKey: `_penalty_reject_${tk}`, areaId: ai || "daily", person: person || "?", room: "", timestamp: Date.now(), week: gwk(new Date()), month: gmo(), pts: -1, day: getToday() };
+    ns.completions = [...ns.completions, penaltyEntry];
     await sv(ns);
-    show(st.lang === "de" ? "✗ Abgelehnt — bitte nochmal erledigen" : "✗ Từ chối — vui lòng làm lại", "error");
+    show(st.lang === "de" ? "✗ Abgelehnt — -1⭐ Strafe" : "✗ Từ chối — -1⭐ phạt", "error");
   };
   const getVerif = (tk, ai, compDay, compWeek) => {
     const safeKey = sanitizeTaskKey(tk);
@@ -214,6 +222,7 @@ export default function App() {
       {tutView && <TutorialPopup t={t} lang={st.lang} tut={tutView} onClose={() => setTutView(null)} />}
       {scr === "login" ? <LoginScreen t={t} st={st} sv={sv} onLogin={u => {
         setUser(u); setScr("plan");
+        localStorage.setItem('wg_user', JSON.stringify(u));
         // Request notification permission & start deadline check
         if ('Notification' in window && Notification.permission === 'default') { Notification.requestPermission(); }
         const checkDeadline = () => {
@@ -222,9 +231,17 @@ export default function App() {
           if (navigator.serviceWorker?.controller) { navigator.serviceWorker.controller.postMessage({ type: 'DEADLINE_CHECK', hoursLeft: tl.hours, tasksOpen: open, lang: st.lang }); }
         };
         checkDeadline(); setInterval(checkDeadline, 3600000);
+        // 2-day inactivity check
+        const today = getToday();
+        const yesterday = (() => { const d = new Date(); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0]; })();
+        const hasTodayDaily = st.completions.some(c => c.areaId === 'daily' && c.person === u.name && c.day === today);
+        const hasYesterdayDaily = st.completions.some(c => c.areaId === 'daily' && c.person === u.name && c.day === yesterday);
+        if (!hasTodayDaily && !hasYesterdayDaily) {
+          setTimeout(() => show(st.lang === 'de' ? '⚠️ Du hast seit 2 Tagen keine tägliche Aufgabe erledigt!' : '⚠️ Bạn chưa thực hiện nhiệm vụ hàng ngày 2 ngày rồi!', 'error'), 1500);
+        }
       }} /> :
         <div style={{ padding: "14px 14px 40px", maxWidth: 520, margin: "0 auto" }}>
-          <NavBar t={t} scr={scr} set={setScr} user={user} hp={hp} st={st} isC={isC} onLogout={() => { setUser(null); setScr("login") }} />
+          <NavBar t={t} scr={scr} set={setScr} user={user} hp={hp} st={st} isC={isC} onLogout={() => { localStorage.removeItem('wg_user'); setUser(null); setScr("login") }} />
           {scr === "plan" && <PlanScreen t={t} st={{ ...st, refPhotos: rp }} user={user} hp={hp} doDone={doDone} doUndo={doUndo} isC={isC} isDailyC={isDailyC} ph={ph} vp={setPhView} openTut={setTutView} doVerify={doVerify} doReject={doReject} getVerif={getVerif} />}
           {scr === "leaderboard" && <LeaderScreen t={t} st={st} user={user} />}
           {scr === "rules" && <RulesScreen t={t} lang={st.lang} st={st} />}
