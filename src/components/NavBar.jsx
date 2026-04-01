@@ -18,38 +18,69 @@ export default function NavBar({t,scr,set,user,hp,st,isC,onLogout}){
     {id:"admin",icon:"settings",l:t.admin,s:showA},
   ];
 
-  const ni={
-    flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:4,
-    padding:"8px 4px",border:"none",borderRadius:980,
-    background:"transparent",fontSize:12,fontWeight:400,
-    color:C.textSecondary,cursor:"pointer",fontFamily:F,
-    position:"relative",transition:"all 0.2s cubic-bezier(0.25,0.1,0.25,1)",
-  };
-  const nia={background:"rgba(0,113,227,0.06)",color:C.accent,fontWeight:600};
-
-  const roleLabel = user?.role==="owner"?"👑":user?.role==="manager"?"⚙":"";
-
-  return <div style={{
-    background:"rgba(255,255,255,0.85)",
-    backdropFilter:"blur(20px) saturate(180%)",
-    WebkitBackdropFilter:"blur(20px) saturate(180%)",
-    borderRadius:18,padding:14,marginBottom:14,
-    boxShadow:C.shadowSm,
-  }}>
-    <div style={{display:"flex",alignItems:"center",gap:10,paddingBottom:10,marginBottom:10,borderBottom:"1px solid rgba(0,0,0,0.04)"}}>
-      <div style={{width:36,height:36,borderRadius:18,background:C.bg,color:C.text,display:"flex",alignItems:"center",justifyContent:"center",fontWeight:600,fontSize:15,fontFamily:F,flexShrink:0}}>{user?.name?.[0]}</div>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:15,fontWeight:600,color:C.text,letterSpacing:"-0.01em"}}>{user?.name} <span style={{fontSize:12,color:C.textSecondary}}>{roleLabel}</span></div>
-        <div style={{fontSize:12,color:C.textSecondary}}>{user?.room!=="—"?user?.room:""}</div>
+  return <>
+    {/* Top Header — User info */}
+    <div style={{
+      background:C.white, borderRadius:20, padding:16, marginBottom:12,
+      boxShadow:C.shadowSm,
+    }}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        {/* Avatar with gradient */}
+        <div style={{
+          width:44,height:44,borderRadius:22,flexShrink:0,
+          background:`linear-gradient(135deg, ${C.accent}, ${C.purple})`,
+          display:"flex",alignItems:"center",justifyContent:"center",
+          color:"#fff",fontWeight:700,fontSize:18,fontFamily:F,
+          boxShadow:`0 4px 12px rgba(0,122,255,0.25)`,
+        }}>{user?.name?.[0]}</div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:17,fontWeight:700,color:C.text,letterSpacing:"-0.02em"}}>{user?.name}</div>
+          <div style={{fontSize:13,color:C.textSecondary,marginTop:1}}>{user?.room!=="—"?user?.room:""}</div>
+        </div>
+        {/* Time badge */}
+        {openCount>0&&<div style={{
+          padding:"6px 12px",borderRadius:980,fontSize:13,fontWeight:600,
+          background:tl.overdue?"rgba(255,69,58,0.1)":"rgba(255,159,10,0.1)",
+          color:tl.overdue?C.red:C.orange,
+        }}>
+          {tl.overdue?t.overdue:tl.text}
+        </div>}
+        <button style={{
+          background:"rgba(120,120,128,0.08)",border:"none",borderRadius:980,
+          padding:"8px 16px",fontSize:13,color:C.textSecondary,cursor:"pointer",fontFamily:F,fontWeight:500,
+        }} onClick={onLogout}>{t.logout}</button>
       </div>
-      {openCount>0&&<div style={{display:"flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:980,background:tl.overdue?"rgba(255,59,48,0.06)":"rgba(255,149,0,0.06)",fontSize:12,fontWeight:500,color:tl.overdue?C.red:C.orange}}>
-        {tl.overdue?t.overdue:tl.text}
-      </div>}
-      <button style={{background:"transparent",border:"none",borderRadius:980,padding:"6px 14px",fontSize:13,color:C.accent,cursor:"pointer",fontFamily:F,fontWeight:400}} onClick={onLogout}>{t.logout}</button>
     </div>
-    <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>{items.filter(i=>i.s).map(i=><button key={i.id} style={{...ni,...(scr===i.id?nia:{})}} onClick={()=>set(i.id)}>
-      <Icon name={i.icon} size={16}/><span>{i.l}</span>
-      {i.badge&&<span style={{position:"absolute",top:-3,right:0,minWidth:16,height:16,borderRadius:8,background:C.red,color:"#fff",fontSize:9,fontWeight:600,display:"flex",alignItems:"center",justifyContent:"center",padding:"0 4px"}}>{i.badge}</span>}
-    </button>)}</div>
-  </div>;
+
+    {/* Tab Bar — iOS segmented control in card */}
+    <div style={{
+      background:"rgba(120,120,128,0.08)",
+      borderRadius:14,padding:3,marginBottom:14,
+      display:"flex",gap:2,
+    }}>
+      {items.filter(i=>i.s).map(i=>{
+        const active=scr===i.id;
+        return <button key={i.id} style={{
+          flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+          gap:2,padding:"8px 2px",border:"none",borderRadius:12,
+          background:active?C.white:"transparent",
+          color:active?C.accent:C.textSecondary,
+          fontSize:10,fontWeight:active?600:500,
+          cursor:"pointer",fontFamily:F,position:"relative",
+          transition:"all 0.25s cubic-bezier(0.25,0.1,0.25,1)",
+          boxShadow:active?"0 1px 4px rgba(0,0,0,0.08)":"none",
+        }} onClick={()=>set(i.id)}>
+          <Icon name={i.icon} size={20}/>
+          <span>{i.l}</span>
+          {i.badge&&<span style={{
+            position:"absolute",top:2,right:"50%",marginRight:-16,
+            minWidth:16,height:16,borderRadius:8,
+            background:C.red,color:"#fff",fontSize:9,fontWeight:700,
+            display:"flex",alignItems:"center",justifyContent:"center",
+            padding:"0 4px",
+          }}>{i.badge}</span>}
+        </button>;
+      })}
+    </div>
+  </>;
 }
