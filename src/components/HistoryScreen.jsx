@@ -23,12 +23,14 @@ export default function HistoryScreen({t,st,hp,ph,vp,user}){
     {/* History list */}
     {!sorted.length?<div style={{textAlign:"center",padding:40,color:C.textSecondary}}><div style={{fontSize:40,marginBottom:8}}>📭</div>{t.noHistory}</div>
     :<div style={{display:"flex",flexDirection:"column",gap:8}}>{(()=>{
-      const seen=new Set();
-      return sorted.filter(c=>{
+      const seen=new Map();
+      // Dedup: keep verified over non-verified for same uid
+      sorted.forEach(c=>{
         const timeRef=c.areaId==="daily"?(c.day||c.week):c.week;
         const uid=`${timeRef}-${c.areaId}-${c.taskKey}-${c.person}`;
-        if(seen.has(uid))return false;seen.add(uid);return true;
-      }).slice(0,60).map((c,i)=>{
+        if(!seen.has(uid)||c.verified)seen.set(uid,c); // prefer verified entry
+      });
+      return [...seen.values()].sort((a,b)=>b.timestamp-a.timestamp).slice(0,60).map((c,i)=>{
         const area=st.weeklyAreas.find(a=>a.id===c.areaId);
         const task=findTask(c.taskKey,c.areaId);
         const timeRef=c.areaId==="daily"?(c.day||c.week):c.week;
@@ -40,7 +42,7 @@ export default function HistoryScreen({t,st,hp,ph,vp,user}){
         const areaLabel=c.areaId==="daily"?(lang==="de"?"Täglich":"Hàng ngày"):(t[c.areaId]||c.areaId);
         const timeLabel=c.areaId==="daily"?(c.day||`KW${c.week}`):`KW${c.week}`;
 
-        return <div key={`${pk}-${c.timestamp}`} style={{background:"rgba(255,255,255,0.85)",backdropFilter:"blur(20px)",borderRadius:16,overflow:"hidden",boxShadow:C.shadowSm,border:`1px solid ${C.border}`,animation:"fadeUp 0.2s ease"}}>
+        return <div key={`${pk}-${c.timestamp}`} style={{background:C.white,borderRadius:16,overflow:"hidden",boxShadow:C.shadowSm,animation:"fadeUp 0.2s ease"}}>
           {/* Photo inline */}
           {photo&&<img src={photo} style={{width:"100%",height:160,objectFit:"cover",cursor:"pointer",borderBottom:`3px solid ${areaColor}`}} alt="proof" onClick={()=>vp(photo)}/>}
 

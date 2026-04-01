@@ -93,17 +93,18 @@ export default function PlanScreen({t,st,user,hp,doDone,doUndo,isC,isDailyC,ph,v
           :ok?<span style={cb} onClick={()=>doT(task.de,areaId)}/>
           :<span style={{...cb,opacity:.3,cursor:"not-allowed"}}/>}
           <div style={{flex:1}}>
-            <div style={{fontSize:14,color:C.text,textDecoration:comp?"line-through":"none",fontWeight:500,letterSpacing:"-0.01em",display:"flex",alignItems:"center",gap:6}}>{lang==="de"?task.de:task.vi}{hasRef&&<span style={{fontSize:13}} title={t.refPhoto}>📷</span>}</div>
+            <div style={{fontSize:14,color:C.text,textDecoration:comp?"line-through":"none",fontWeight:500,letterSpacing:"-0.01em"}}>{lang==="de"?task.de:task.vi}</div>
             <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
               <span style={{fontSize:12,color:C.textSecondary}}>{lang==="de"?task.vi:task.de}</span>
-              {hasRef&&<button style={{background:"none",border:"none",padding:0,fontSize:11,color:C.accent,cursor:"pointer",fontFamily:F,fontWeight:600}} onClick={()=>togRef(k)}>{refOpen?t.hideRef:t.showRef}</button>}
+              {hasRef&&<button style={{background:"rgba(0,122,255,0.08)",border:"none",padding:"3px 10px",borderRadius:980,fontSize:11,color:C.accent,cursor:"pointer",fontFamily:F,fontWeight:600}} onClick={()=>togRef(k)}>{lang==="de"?"Referenzfoto":"Ảnh tham chiếu"} {refOpen?"↑":"↓"}</button>}
               {hasTut&&<button style={{background:"none",border:"none",padding:0,fontSize:11,color:C.purple,cursor:"pointer",fontFamily:F,fontWeight:600}} onClick={()=>togRef(`tut-${k}`)}>{tutOpen?"✕":t.tutorialShort}</button>}
             </div>
           </div>
         </div>
-        {refOpen&&hasRef&&<div style={{marginLeft:32,marginTop:6,padding:6,background:"rgba(0,0,0,0.02)",borderRadius:12,border:`1px solid ${C.border}`}}>
-          <img src={st.refPhotos[refKey]} style={{width:"100%",maxHeight:150,objectFit:"cover",borderRadius:10}} alt="ref"/>
-          <div style={{fontSize:10,color:C.textSecondary,marginTop:2,textAlign:"center"}}>{t.refPhoto}: {lang==="de"?task.de:task.vi}</div>
+        {refOpen&&hasRef&&<div style={{marginLeft:32,marginTop:8,borderRadius:14,overflow:"hidden",boxShadow:C.shadowMd}}>
+          <div style={{fontSize:11,fontWeight:700,color:C.textSecondary,padding:"8px 10px 4px",background:"rgba(0,0,0,0.02)",letterSpacing:"0.02em",textTransform:"uppercase"}}>{lang==="de"?"Referenzfoto":"Ảnh tham chiếu"}</div>
+          <img src={st.refPhotos[refKey]} style={{width:"100%",maxHeight:180,objectFit:"cover",display:"block",cursor:"pointer"}} alt="ref" onClick={()=>vp(st.refPhotos[refKey])}/>
+          <div style={{fontSize:10,color:C.textSecondary,padding:"4px 10px 8px",background:"rgba(0,0,0,0.02)"}}>{lang==="de"?task.de:task.vi} · {lang==="de"?"Tippen um zu vergrößern":"Nhấn để xem đầy đủ"}</div>
         </div>}
         {tutOpen&&hasTut&&<div style={{marginLeft:32,marginTop:6,padding:8,background:"rgba(175,82,222,0.04)",borderRadius:12,border:"1px solid rgba(175,82,222,0.12)"}}>
           {st.tutorials[tutKey].steps.slice(0,2).map((s,i)=><div key={i} style={{display:"flex",gap:6,marginBottom:6}}>
