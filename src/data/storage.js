@@ -47,6 +47,7 @@ async function loadState() {
     })),
     rooms: (rooms || []).map((r) => ({ id: r.id, name: r.name, residents: r.residents || [] })),
     completions: (completions || []).map((c) => ({
+      id: c.id, // keep DB id for updates
       taskKey: c.task_key, areaId: c.area_id, person: c.person, room: c.room,
       week: c.week, day: c.day, month: c.month, timestamp: c.timestamp,
       pts: c.pts, verified: c.verified, verifiedBy: c.verified_by, verifiedAt: c.verified_at,
@@ -119,32 +120,49 @@ async function saveState(ns) {
     );
   }
 
-  // Completions — safe upsert + delete removed (NEVER delete all first)
+  // Completions — INSERT new, UPDATE existing by id, DELETE removed
   if (JSON.stringify(ns.completions) !== JSON.stringify(prev.completions)) {
     promises.push(
       (async () => {
-        if (ns.completions.length > 0) {
-          // Upsert in batches of 100 — uses timestamp as unique conflict key
-          for (let i = 0; i < ns.completions.length; i += 100) {
-            const batch = ns.completions.slice(i, i + 100);
-            await supabase.from("completions").upsert(
-              batch.map((c) => ({
-                task_key: c.taskKey, area_id: c.areaId || "daily", person: c.person,
-                room: c.room || null, week: c.week, day: c.day || null,
-                month: c.month || null, timestamp: c.timestamp, pts: c.pts || 1,
-                verified: c.verified || false, verified_by: c.verifiedBy || null,
-                verified_at: c.verifiedAt || null,
-              })),
-              { onConflict: "timestamp" }
-            );
-          }
+        const toRow = (c) => ({
+          task_key: c.taskKey, area_id: c.areaId || "daily", person: c.person,
+          room: c.room || null, week: c.week, day: c.day || null,
+          month: c.month || null, timestamp: c.timestamp, pts: c.pts || 1,
+          verified: c.verified || false, verified_by: c.verifiedBy || null,
+          verified_at: c.verifiedAt || null,
+        });
+
+        const prevTs = new Set((prev.completions || []).map((c) => c.timestamp));
+        const newTs  = new Set(ns.completions.map((c) => c.timestamp));
+
+        // 1. INSERT brand-new completions (not in prev)
+        const toInsert = ns.completions.filter((c) => !prevTs.has(c.timestamp));
+        for (let i = 0; i < toInsert.length; i += 100) {
+          const { error } = await supabase.from("completions").insert(toInsert.slice(i, i + 100).map(toRow));
+          if (error) console.error("insert completions error:", error.message);
         }
-        // Only delete records that were explicitly removed (present in prev but not in ns)
-        const prevTs = (prev.completions || []).map((c) => c.timestamp);
-        const newTs = new Set(ns.completions.map((c) => c.timestamp));
-        const removed = prevTs.filter((ts) => !newTs.has(ts));
+
+        // 2. UPDATE changed completions (in prev AND in ns but data differs) — use DB id
+        const prevMap = {};
+        (prev.completions || []).forEach((c) => { prevMap[c.timestamp] = c; });
+        const toUpdate = ns.completions.filter((c) => {
+          if (!prevTs.has(c.timestamp)) return false; // new, handled above
+          const p = prevMap[c.timestamp];
+          return c.id && JSON.stringify(c) !== JSON.stringify(p);
+        });
+        for (const c of toUpdate) {
+          const { error } = await supabase.from("completions").update(toRow(c)).eq("id", c.id);
+          if (error) console.error("update completion error:", error.message, c);
+        }
+
+        // 3. DELETE explicitly removed completions
+        const removed = (prev.completions || []).filter((c) => !newTs.has(c.timestamp));
         if (removed.length) {
-          await supabase.from("completions").delete().in("timestamp", removed);
+          // Delete by id if available, else by timestamp
+          const withId = removed.filter((c) => c.id).map((c) => c.id);
+          const withoutId = removed.filter((c) => !c.id).map((c) => c.timestamp);
+          if (withId.length) await supabase.from("completions").delete().in("id", withId);
+          if (withoutId.length) await supabase.from("completions").delete().in("timestamp", withoutId);
         }
       })()
     );
