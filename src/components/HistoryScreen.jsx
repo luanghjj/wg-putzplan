@@ -4,7 +4,9 @@ import { gwk, fd, ft } from "../utils/helpers";
 export default function HistoryScreen({t,st,hp,ph,vp,user}){
   const lang=st.lang||"de";
   const comps=Array.isArray(st.completions)?st.completions:Object.values(st.completions||{});
-  const sorted=[...comps].sort((a,b)=>b.timestamp-a.timestamp);const wk=gwk(new Date());
+  // Filter out internal penalty/system entries from display
+  const realComps=comps.filter(c=>!c.taskKey?.startsWith("_"));
+  const sorted=[...realComps].sort((a,b)=>b.timestamp-a.timestamp);const wk=gwk(new Date());
   const doE=()=>{if(!hp("export_data"))return;const h="Datum,Uhrzeit,KW,Person,Zimmer,Bereich,Aufgabe,Punkte\n";const rows=sorted.map(c=>`${fd(c.timestamp)},${ft(c.timestamp)},${c.week},${c.person},${c.room},${c.areaId},${c.taskKey},${c.pts||1}`).join("\n");const b=new Blob([h+rows],{type:"text/csv"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download=`wg_KW${wk}.csv`;a.click();};
 
   // Find task definition for translation

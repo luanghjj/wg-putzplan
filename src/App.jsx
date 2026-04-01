@@ -116,28 +116,24 @@ export default function App() {
     setRp(newRp);
   };
 
-  const sanitizeTaskKey = (tk) => tk.replace(/[.#$\/\[\]]/g, "_");
-
   const doDone = async (tk, ai, photo) => {
     if (!user) return; const now = Date.now(), wk = gwk(new Date()), today = getToday();
     const all = [...st.dailyTasks, ...st.weeklyAreas.flatMap(a => a.tasks)];
     const taskPts = all.find(x => x.de === tk)?.pts || 1;
     const isDaily = (ai || "daily") === "daily";
     const e = { taskKey: tk, areaId: ai || "daily", person: user.name, room: user.room, timestamp: now, week: wk, month: gmo(), pts: taskPts };
-    if (isDaily) e.day = today; // daily tasks track by day (German timezone)
-    // Clear old rejected verification entry so re-done task shows as fresh pending
-    const safeK = sanitizeTaskKey(tk);
-    const vKey = isDaily ? `${today}-daily-${safeK}` : `${wk}-${ai}-${safeK}`;
-    const oldVerif = (st.verifications || {})[vKey];
+    if (isDaily) e.day = today;
+    // Clear old rejected status so re-done task shows as fresh pending
+    const vKey = isDaily ? `${today}-daily-${tk}` : `${wk}-${ai}-${tk}`;
     const updatedVerif = { ...(st.verifications || {}) };
-    if (oldVerif?.status === "rejected") delete updatedVerif[vKey];
+    if (updatedVerif[vKey]?.status === "rejected") delete updatedVerif[vKey];
     await sv({ ...st, completions: [...st.completions, e], verifications: updatedVerif });
     if (photo) {
       const photoKey = isDaily ? `${today}-daily-${tk}-${user.name}` : `${wk}-${ai}-${tk}-${user.name}`;
       await sp({ ...ph, [photoKey]: photo });
     }
     show(st.lang === "de" ? `✓ Erledigt - warten auf Bestätigung` : `✓ Hoàn thành - chờ xác nhận`);
-    if (st.sheetsUrl) { try { await fetch(st.sheetsUrl, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ person: user.name, room: user.room, task: tk, area: ai || "daily", date: fd(now), time: ft(now), week: wk, points: taskPts, status: "pending_verification" }) }); } catch { } }
+    if (st.sheetsUrl) { try { await fetch(st.sheetsUrl, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ person: user.name, room: user.room, task: tk, area: ai || "daily", date: fd(now), time: ft(now), week: wk, points: taskPts }) }); } catch { } }
   };
   const doUndo = async (tk, ai, wkOrDay) => {
     const isDaily = (ai || "daily") === "daily";
@@ -157,56 +153,41 @@ export default function App() {
   // Daily task completion check — uses day (German timezone) instead of week
   const isDailyC = (tk, person) => { const today = getToday(); return st.completions.find(c => c.taskKey === tk && c.areaId === "daily" && (c.day === today || ((!c.day) && c.week === gwk(new Date()))) && (!person || c.person === person)); };
 
-  // doVerify: params={tk, ai, by, person, compDay, compWeek}
   const doVerify = async (params) => {
     const { tk, ai, by, person, compDay, compWeek } = params;
-    const safeKey = sanitizeTaskKey(tk);
     const isDaily = (ai || "daily") === "daily";
-    const vKeyRef = isDaily ? (compDay || compWeek) : compWeek;
-    const key = `${vKeyRef}-${ai || "daily"}-${safeKey}`;
-    // Find matching completion
-    const completion = st.completions.find(c => {
-      if (c.taskKey !== tk || (c.areaId || "daily") !== (ai || "daily")) return false;
-      if (isDaily) {
-        if (compDay && c.day) return c.day === compDay && (!person || c.person === person);
-        if (compDay && !c.day) return c.week === compWeek && (!person || c.person === person); // legacy
-        return c.week === compWeek && (!person || c.person === person);
-      }
-      return c.week === compWeek && (!person || c.person === person);
-    });
-    if (!completion) return;
+    // Consistent key: daily uses day, weekly uses week
+    const key = isDaily ? `${compDay || compWeek}-daily-${tk}` : `${compWeek}-${ai}-${tk}`;
     const all = [...st.dailyTasks, ...st.weeklyAreas.flatMap(a => a.tasks)];
-    const basePts = all.find(x => x.de === tk)?.pts || 1;
-    const bonusPts = Math.round(basePts * 1.2 * 10) / 10; // +20% verified bonus
+    const pts = all.find(x => x.de === tk)?.pts || 1;
     const updatedCompletions = st.completions.map(c => {
       if (c.taskKey !== tk || (c.areaId || "daily") !== (ai || "daily")) return c;
       if (isDaily) {
-        if (compDay && c.day) { if (c.day !== compDay) return c; }
-        else { if (c.week !== compWeek) return c; }
+        if (compDay && c.day && c.day !== compDay) return c;
+        if (!compDay && c.week !== compWeek) return c;
         if (person && c.person !== person) return c;
       } else {
         if (c.week !== compWeek) return c;
         if (person && c.person !== person) return c;
       }
-      return { ...c, pts: bonusPts, verified: true, verifiedBy: by, verifiedAt: Date.now() };
+      return { ...c, pts, verified: true, verifiedBy: by, verifiedAt: Date.now() };
     });
     await sv({ ...st, completions: updatedCompletions, verifications: { ...(st.verifications || {}), [key]: { status: "verified", by, at: Date.now() } } });
-    show(st.lang === "de" ? `✓ Bestätigt! +${bonusPts} Punkte (+20%)` : `✓ Xác nhận! +${bonusPts} Điểm (+20%)`);
+    show(st.lang === "de" ? `✓ Bestätigt! +${pts}⭐` : `✓ Xác nhận! +${pts}⭐`);
   };
-  // doReject: params={tk, ai, by, reason, person, compDay, compWeek}
   const doReject = async (params) => {
     const { tk, ai, by, reason, person, compDay, compWeek } = params;
-    const safeKey = sanitizeTaskKey(tk);
     const isDaily = (ai || "daily") === "daily";
-    const vKeyRef = isDaily ? (compDay || compWeek) : compWeek;
-    const key = `${vKeyRef}-${ai || "daily"}-${safeKey}`;
+    // Consistent key: same format as doVerify
+    const key = isDaily ? `${compDay || compWeek}-daily-${tk}` : `${compWeek}-${ai}-${tk}`;
     const ns = {
       ...st,
+      // Remove the rejected completion so resident must redo
       completions: st.completions.filter(c => {
         if (c.taskKey !== tk || (c.areaId || "daily") !== (ai || "daily")) return true;
         if (isDaily) {
-          if (compDay && c.day) { if (c.day !== compDay) return true; }
-          else { if (c.week !== compWeek) return true; }
+          if (compDay && c.day && c.day !== compDay) return true;
+          if (!compDay && c.week !== compWeek) return true;
           if (person && c.person !== person) return true;
         } else {
           if (c.week !== compWeek) return true;
@@ -216,17 +197,14 @@ export default function App() {
       }),
       verifications: { ...(st.verifications || {}), [key]: { status: "rejected", by, reason, at: Date.now() } }
     };
-    // Add -1⭐ penalty completion for reject
-    const penaltyEntry = { taskKey: `_penalty_reject_${tk}`, areaId: ai || "daily", person: person || "?", room: "", timestamp: Date.now(), week: gwk(new Date()), month: gmo(), pts: -1, day: getToday() };
-    ns.completions = [...ns.completions, penaltyEntry];
     await sv(ns);
-    show(st.lang === "de" ? "✗ Abgelehnt — -1⭐ Strafe" : "✗ Từ chối — -1⭐ phạt", "error");
+    show(st.lang === "de" ? "✗ Abgelehnt — bitte nochmal erledigen" : "✗ Từ chối — vui lòng làm lại", "error");
   };
   const getVerif = (tk, ai, compDay, compWeek) => {
-    const safeKey = sanitizeTaskKey(tk);
     const isDaily = (ai || "daily") === "daily";
-    const vKeyRef = isDaily ? (compDay || compWeek) : compWeek;
-    return (st.verifications || {})[`${vKeyRef}-${ai || "daily"}-${safeKey}`];
+    // Same consistent key format as doVerify/doReject
+    const key = isDaily ? `${compDay || compWeek}-daily-${tk}` : `${compWeek}-${ai}-${tk}`;
+    return (st.verifications || {})[key];
   };
 
   if (ld || !st) return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}><div style={{ width: 36, height: 36, border: "3px solid #E2E8F0", borderTopColor: "#3B82F6", borderRadius: "50%", animation: "spin .8s linear infinite" }} /></div>;
