@@ -236,7 +236,11 @@ async function saveState(ns) {
     );
   }
 
-  await Promise.all(promises);
+  const results = await Promise.allSettled(promises);
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') console.error(`saveState promise ${i} failed:`, r.reason);
+    if (r.value?.error) console.error(`saveState promise ${i} error:`, r.value.error);
+  });
   _lastSaved = JSON.parse(JSON.stringify(ns)); // deep clone for next diff
 }
 
