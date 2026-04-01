@@ -34,3 +34,4 @@ dist-ssr
 
 # Scripts output
 scripts/firebase-export.json
+.vercel
