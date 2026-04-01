@@ -123,7 +123,7 @@ function AccountMgr({t,st,sv,rpin,show}){
     sv({...st,
       users:st.users.map(u=>u.id===uid?{...u,name:newName.trim()}:u),
       rooms:st.rooms.map(r=>({...r,residents:(r.residents||[]).map(re=>re.name===oldUser.name?{...re,name:newName.trim()}:re)})),
-      completions:(st.completions||[]).map(c=>c.person===oldUser.name?{...c,person:newName.trim()}:c)
+      history:(st.history||[]).map(h=>h.person===oldUser.name?{...h,person:newName.trim()}:h)
     });
     setEditNameId(null);show("✓");
   };

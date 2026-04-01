@@ -3,7 +3,7 @@ export const CRIT_PERMS=["manage_rooms","manage_roles","config_sheets","reset_we
 export const OWNER={id:"owner-1",name:"Origami",password:"origami",role:"owner",room:"—",roomId:null};
 
 export const DEF={
-  lang:"vi", masterPin:"1234", users:[{...OWNER}], rooms:[], completions:[], sheetsUrl:"",
+  lang:"vi", masterPin:"1234", users:[{...OWNER}], rooms:[], history:[], sheetsUrl:"",
   penaltyRate:5, rewardText:"Wird von den anderen bekocht! 🍳", refPhotos:{}, tutorials:{
     "task-Geschirr spülen / abräumen": {
       steps:[
@@ -203,7 +203,7 @@ export const DEF={
       videoUrl:""
     }
   },
-  verifications:{}, announcements:[], reports:[], deadlineDay:0, deadlineHour:23, deadlineMin:59,
+  announcements:[], reports:[], deadlineDay:0, deadlineHour:23, deadlineMin:59,
   maxDiffPercent:30, penaltyPerMissingPoint:2, catchUpEnabled:true,
   rolePerms:{owner:[...ALL_PERMS],manager:["manage_residents","check_own_area","check_all","view_history","export_data","reset_week","edit_tasks"],resident:["check_own_area","view_history"]},
   dailyTasks:[
