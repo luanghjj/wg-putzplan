@@ -31,8 +31,8 @@ export function AnnouncementModal({ announcements, user, st, onDismiss }) {
   });
 
   return (
-    <div style={{ ...ov, zIndex: 9999, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}>
-      <div style={{ width: "100%", maxWidth: 420, margin: "auto", padding: 24, animation: "fadeUp .3s ease" }}>
+    <div style={{ position:"fixed", inset:0, zIndex: 9999, background: "rgba(0,0,0,0.85)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
+      <div style={{ width: "100%", maxWidth: 420, margin: "0 auto", padding: "60px 24px 40px", minHeight: "100vh", display: "flex", flexDirection: "column", justifyContent: "center", animation: "fadeUp .3s ease" }}>
         {/* Level badge */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: 14, background: lvl.bg, fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: F, letterSpacing: "-0.01em" }}>
