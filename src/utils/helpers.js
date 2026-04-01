@@ -11,11 +11,22 @@ export function getToday(){
 export function compImg(file,mw=400,q=0.5){return new Promise(res=>{const r=new FileReader();r.onload=e=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");const rt=Math.min(mw/img.width,mw/img.height,1);c.width=img.width*rt;c.height=img.height*rt;c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",q));};img.src=e.target.result;};r.readAsDataURL(file);});}
 
 export function getDeadline(wk){
-  const jan4=new Date(Date.UTC(new Date().getFullYear(),0,4));
   const w=Number(wk);
-  const d=new Date(jan4.getTime()+((w-1)*7-(jan4.getUTCDay()-1))*864e5);
-  d.setUTCDate(d.getUTCDate()+(7-d.getUTCDay()));
-  d.setUTCHours(23,59,59);return d;
+  // ISO week date: find the Thursday of the target week, then get Sunday
+  // Jan 4 is always in ISO week 1
+  const jan4=new Date(Date.UTC(new Date().getFullYear(),0,4));
+  const jan4Day=jan4.getUTCDay()||7; // Mon=1..Sun=7
+  // Monday of week 1
+  const mon1=new Date(jan4);
+  mon1.setUTCDate(mon1.getUTCDate()-(jan4Day-1));
+  // Monday of target week
+  const monW=new Date(mon1);
+  monW.setUTCDate(monW.getUTCDate()+(w-1)*7);
+  // Sunday of target week = Monday + 6
+  const sun=new Date(monW);
+  sun.setUTCDate(sun.getUTCDate()+6);
+  sun.setUTCHours(23,59,59);
+  return sun;
 }
 export function getTimeLeft(wk){
   const dl=getDeadline(wk),now=new Date(),diff=dl-now;
@@ -26,19 +37,13 @@ export function getTimeLeft(wk){
 
 // Get Monday-Sunday date range for a given ISO week
 export function getWeekRange(wk){
-  const w=Number(wk);
-  const jan4=new Date(Date.UTC(new Date().getFullYear(),0,4));
-  const mon=new Date(jan4.getTime()+((w-1)*7-(jan4.getUTCDay()-1))*864e5);
-  // Adjust to Monday
-  const dayOfWeek=mon.getUTCDay()||7;
-  mon.setUTCDate(mon.getUTCDate()-(dayOfWeek-1));
-  const sun=new Date(mon);
-  sun.setUTCDate(sun.getUTCDate()+6);
+  const sun=getDeadline(wk); // Sunday 23:59:59
+  const mon=new Date(sun);
+  mon.setUTCDate(mon.getUTCDate()-6); // Monday = Sunday - 6
   const fmt=(d)=>`${String(d.getUTCDate()).padStart(2,"0")}.${String(d.getUTCMonth()+1).padStart(2,"0")}`;
   return{
     mon,sun,
-    range:`${fmt(mon)} – ${fmt(sun)}`,
-    deadlineStr:`${t=>t==="de"?"So":"CN"} ${fmt(sun)}.${sun.getUTCFullYear()}`
+    range:`${fmt(mon)} – ${fmt(sun)}`
   };
 }
 
