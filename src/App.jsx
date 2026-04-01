@@ -28,12 +28,8 @@ export default function App() {
   const [st, setSt] = useState(null);
   const [ph, setPh] = useState({});
   const [rp, setRp] = useState({});
-  const [user, setUser] = useState(() => {
-    try { const s = localStorage.getItem('wg_user'); return s ? JSON.parse(s) : null; } catch { return null; }
-  });
-  const [scr, setScr] = useState(() => {
-    try { return localStorage.getItem('wg_user') ? 'plan' : 'login'; } catch { return 'login'; }
-  });
+  const [user, setUser] = useState(null);
+  const [scr, setScr] = useState("login");
   const [ld, setLd] = useState(true);
   const [toast, setToast] = useState(null);
   const [pinM, setPinM] = useState(null);
@@ -65,9 +61,12 @@ export default function App() {
           if (!d.users?.some(u => u.id === "owner-1")) d.users = [{ ...OWNER }, ...(d.users || [])];
           const s = safeSt({ ...DEF, ...d });
           setSt(s);
-          // Validate auto-login user still exists
-          if (user && !s.users.find(u => u.password === user.password)) {
-            setUser(null); setScr('login'); localStorage.removeItem('wg_user');
+          // Auto-login from saved PIN
+          const savedPin = localStorage.getItem('wg_pin');
+          if (savedPin) {
+            const found = s.users.find(u => u.password === savedPin);
+            if (found) { setUser({...found}); setScr('plan'); }
+            else { localStorage.removeItem('wg_pin'); }
           }
         } else setSt(safeSt({ ...DEF }));
         if (p?.value) setPh(JSON.parse(p.value));
@@ -241,7 +240,7 @@ export default function App() {
       {tutView && <TutorialPopup t={t} lang={st.lang} tut={tutView} onClose={() => setTutView(null)} />}
       {scr === "login" ? <LoginScreen t={t} st={st} sv={sv} onLogin={u => {
         setUser(u); setScr("plan");
-        localStorage.setItem('wg_user', JSON.stringify(u));
+        localStorage.setItem('wg_pin', u.password);
         // Request notification permission & start deadline check
         if ('Notification' in window && Notification.permission === 'default') { Notification.requestPermission(); }
         const checkDeadline = () => {
@@ -260,7 +259,7 @@ export default function App() {
         }
       }} /> :
         <div style={{ padding: "14px 14px 40px", maxWidth: 520, margin: "0 auto" }}>
-          <NavBar t={t} scr={scr} set={setScr} user={user} hp={hp} st={st} isC={isC} onLogout={() => { localStorage.removeItem('wg_user'); setUser(null); setScr("login") }} />
+          <NavBar t={t} scr={scr} set={setScr} user={user} hp={hp} st={st} isC={isC} onLogout={() => { localStorage.removeItem('wg_pin'); setUser(null); setScr("login") }} />
           {scr === "plan" && <PlanScreen t={t} st={{ ...st, refPhotos: rp }} user={user} hp={hp} doDone={doDone} doUndo={doUndo} isC={isC} isDailyC={isDailyC} ph={ph} vp={setPhView} openTut={setTutView} doVerify={doVerify} doReject={doReject} getVerif={getVerif} />}
           {scr === "leaderboard" && <LeaderScreen t={t} st={st} user={user} />}
           {scr === "rules" && <RulesScreen t={t} lang={st.lang} st={st} />}
