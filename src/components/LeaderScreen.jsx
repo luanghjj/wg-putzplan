@@ -7,8 +7,8 @@ export default function LeaderScreen({t,st,user}){
   const canSeeAll=user?.role==="owner"||user?.role==="manager";
   const wk=gwk(new Date()),mo=gmo(),tl=getTimeLeft(wk);
   const users=st.users.filter(u=>u.room!=="—");
-  // Calculate points: sum pts from completions (pts is set on completion, fallback to 1 for legacy entries)
-  const gP=(u,f)=>st.completions.filter(c=>c.person===u.name&&(f==="week"?c.week===wk:f==="month"?c.month===mo:true)).reduce((s,c)=>s+(c.pts||1),0);
+  // Calculate points: use == for loose comparison (DB stores strings, helpers return numbers)
+  const gP=(u,f)=>st.completions.filter(c=>c.person===u.name&&(f==="week"?c.week==wk:f==="month"?c.month==mo:true)).reduce((s,c)=>s+(c.pts||1),0);
   const ranked=users.map(u=>({...u,week:gP(u,"week"),month:gP(u,"month")})).sort((a,b)=>b.month-a.month);
   const w=ranked[0];const medals=["🥇","🥈","🥉"];
   const rot=grot(wk,st.rooms,st.weeklyAreas);
@@ -20,7 +20,7 @@ export default function LeaderScreen({t,st,user}){
     assignedAreas.forEach(area=>{
       area.tasks.forEach(task=>{
         totalTasks++;
-        const comp=st.completions.find(c=>c.taskKey===task.de&&c.areaId===area.id&&c.week===wk);
+        const comp=st.completions.find(c=>c.taskKey===task.de&&c.areaId===area.id&&c.week==wk);
         const verif=(st.verifications||{})[`${wk}-${area.id}-${sanitizeTaskKey(task.de)}`];
         const status=comp?(verif?.status==="rejected"?"rejected":verif?.status==="verified"?"verified":"done"):(tl.overdue?"missed":"open");
         if(comp)doneTasks++;
@@ -35,7 +35,7 @@ export default function LeaderScreen({t,st,user}){
   });
 
   let totalAll=0,doneAll=0;
-  st.weeklyAreas.forEach(a=>a.tasks.forEach(ta=>{totalAll++;if(st.completions.find(c=>c.taskKey===ta.de&&c.areaId===a.id&&c.week===wk))doneAll++;}));
+  st.weeklyAreas.forEach(a=>a.tasks.forEach(ta=>{totalAll++;if(st.completions.find(c=>c.taskKey===ta.de&&c.areaId===a.id&&c.week==wk))doneAll++;}));
   const pctAll=totalAll>0?Math.round(doneAll/totalAll*100):0;
 
   const statusColors={done:C.accent,verified:C.green,rejected:C.red,missed:C.red,open:C.textSecondary};
@@ -102,7 +102,7 @@ export default function LeaderScreen({t,st,user}){
       {st.rooms.map(room=>{
         const residents=(room.residents||[]).map(r=>{
           const u=st.users.find(u=>u.name===r.name&&u.roomId===room.id);
-          const pts=st.completions.filter(c=>c.person===r.name&&c.week===wk).reduce((s,c)=>s+(c.pts||1),0);
+          const pts=st.completions.filter(c=>c.person===r.name&&c.week==wk).reduce((s,c)=>s+(c.pts||1),0);
           return{...r,pts,userId:u?.id};
         });
         if(residents.length<2)return null;
@@ -151,7 +151,7 @@ export default function LeaderScreen({t,st,user}){
       {(()=>{
         let totalPersonPen=0;
         st.rooms.forEach(room=>{
-          const residents=(room.residents||[]).map(r=>({...r,pts:st.completions.filter(c=>c.person===r.name&&c.week===wk).reduce((s,c)=>s+(c.pts||1),0)}));
+          const residents=(room.residents||[]).map(r=>({...r,pts:st.completions.filter(c=>c.person===r.name&&c.week==wk).reduce((s,c)=>s+(c.pts||1),0)}));
           if(residents.length<2)return;
           const rr=roomReports.find(x=>x.room.id===room.id);
           const totalRoomPts=rr?rr.taskDetails.reduce((s,td)=>s+td.task.pts,0):0;

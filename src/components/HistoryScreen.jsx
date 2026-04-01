@@ -18,7 +18,7 @@ export default function HistoryScreen({t,st,hp,ph,vp,user}){
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}><h2 style={{fontSize:20,color:C.text,margin:0,fontFamily:F,letterSpacing:"-0.022em"}}>📊 {t.history}</h2>{hp("export_data")&&<button style={btnS} onClick={doE}>📥 {t.exportCsv}</button>}</div>
 
     {/* Room stats */}
-    <div style={{display:"flex",gap:8,marginBottom:14}}>{st.rooms.map(r=>{const c=comps.filter(c=>c.room===r.name&&c.week===wk).reduce((s,c)=>s+(c.pts||1),0);return <div key={r.id} style={{flex:1,background:"rgba(255,255,255,0.85)",backdropFilter:"blur(20px)",borderRadius:14,padding:12,textAlign:"center",boxShadow:C.shadowSm,border:`1px solid ${C.border}`}}><div style={{fontSize:22,fontWeight:700,color:C.accent}}>{c}⭐</div><div style={{fontSize:11,color:C.textSecondary}}>{r.name}</div></div>;})}</div>
+    <div style={{display:"flex",gap:8,marginBottom:14}}>{st.rooms.map(r=>{const c=comps.filter(c=>c.room===r.name&&c.week==wk).reduce((s,c)=>s+(c.pts||1),0);return <div key={r.id} style={{flex:1,background:"rgba(255,255,255,0.85)",backdropFilter:"blur(20px)",borderRadius:14,padding:12,textAlign:"center",boxShadow:C.shadowSm,border:`1px solid ${C.border}`}}><div style={{fontSize:22,fontWeight:700,color:C.accent}}>{c}⭐</div><div style={{fontSize:11,color:C.textSecondary}}>{r.name}</div></div>;})}</div>
 
     {/* History list */}
     {!sorted.length?<div style={{textAlign:"center",padding:40,color:C.textSecondary}}><div style={{fontSize:40,marginBottom:8}}>📭</div>{t.noHistory}</div>

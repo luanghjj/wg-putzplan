@@ -40,7 +40,7 @@ export default function PlanScreen({t,st,user,hp,doDone,doUndo,isC,isDailyC,ph,v
   // ---- All completions for this week ----
   const allCompletions = Array.isArray(st.completions)?st.completions:Object.values(st.completions||{});
   const weekCompletions = allCompletions.filter(c=>c.week==wk);
-  const todayDailyCompletions = allCompletions.filter(c=>c.areaId==="daily"&&(c.day===today||((!c.day)&&c.week===wk)));
+  const todayDailyCompletions = allCompletions.filter(c=>c.areaId==="daily"&&(c.day===today||((!c.day)&&c.week==wk)));
 
   // ---- Pending tasks for owner/manager verification ----
   const sanitizeTK = (tk) => tk.replace(/[.#$\/\[\]]/g, "_");
