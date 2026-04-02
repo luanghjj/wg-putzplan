@@ -294,7 +294,7 @@ export default function App() {
           <NavBar t={t} scr={scr} set={setScr} user={user} hp={hp} st={st} isC={isC} onLogout={() => { localStorage.removeItem('wg_pin'); setUser(null); setScr("login"); }} />
           {scr === "plan" && <PlanScreen t={t} st={{ ...st, refPhotos: rp }} user={user} hp={hp} doDone={doDone} doUndo={doUndo} isC={isC} isDailyC={isDailyC} isWeeklyC={isWeeklyC} ph={ph} vp={setPhView} openTut={setTutView} doVerify={doVerify} doReject={doReject} />}
           {scr === "leaderboard" && <LeaderScreen t={t} st={st} user={user} />}
-          {scr === "rules" && <RulesScreen t={t} lang={st.lang} st={st} />}
+          {scr === "rules" && <RulesScreen t={t} lang={st.lang} st={st} user={user} sv={sv} show={show} />}
           {scr === "history" && <HistoryScreen t={t} st={st} hp={hp} ph={ph} vp={setPhView} user={user} />}
           {scr === "reports" && <ReportScreen t={t} st={st} sv={sv} user={user} show={show} />}
           {scr === "admin" && <AdminScreen t={t} st={{ ...st, refPhotos: rp }} sv={sv} hp={hp} rpin={rpin} show={show} user={user} srp={srp} />}

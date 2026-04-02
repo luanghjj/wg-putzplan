@@ -64,6 +64,7 @@ async function loadState() {
     rolePerms: cfg.rolePerms ?? DEF.rolePerms,
     managerPhoto1: cfg.managerPhoto1 ?? null,
     managerPhoto2: cfg.managerPhoto2 ?? null,
+    trashPhotos: cfg.trashPhotos ? (typeof cfg.trashPhotos === 'string' ? JSON.parse(cfg.trashPhotos) : cfg.trashPhotos) : [],
   };
 }
 
@@ -75,6 +76,7 @@ async function saveConfig(ns) {
     masterPin: ns.masterPin, lang: ns.lang, sheetsUrl: ns.sheetsUrl,
     rotation: ns.rotation, dailyTasks: ns.dailyTasks, weeklyAreas: ns.weeklyAreas,
     rolePerms: ns.rolePerms, managerPhoto1: ns.managerPhoto1, managerPhoto2: ns.managerPhoto2,
+    trashPhotos: ns.trashPhotos || [],
   };
   const toUpsert = Object.entries(configFields)
     .filter(([, v]) => v != null)

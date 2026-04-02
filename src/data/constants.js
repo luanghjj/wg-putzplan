@@ -222,6 +222,16 @@ export const DEF={
 };
 
 export const RULES=[
+  {catDe:"Müllentsorgung im Gebäude",catVi:"Quy định đổ rác tại toà nhà",icon:"🗑️",hasPhotos:true,items:[
+    {de:"Restmüll (schwarze Tonne): Alles, was nicht recycelt werden kann.",vi:"Rác thải chung (thùng đen): Tất cả những thứ không tái chế được."},
+    {de:"Biomüll (braune Tonne): Essensreste, Obst-/Gemüseschalen, Kaffeesatz, Teebeutel.",vi:"Rác hữu cơ (thùng nâu): Thức ăn thừa, vỏ trái cây/rau, bã cà phê, túi trà."},
+    {de:"Papier & Pappe (blaue Tonne): Zeitungen, Kartons, Papier (kein beschichtetes Papier).",vi:"Giấy & bìa cứng (thùng xanh dương): Báo, hộp carton, giấy (không giấy tráng phủ)."},
+    {de:"Verpackungen / Gelber Sack: Plastikverpackungen, Dosen, Tetrapaks.",vi:"Bao bì / Túi vàng: Bao bì nhựa, lon, hộp Tetrapack."},
+    {de:"Glas: Altglas nach Farben (weiß, grün, braun) in die Container bringen.",vi:"Thuỷ tinh: Mang chai lọ thuỷ tinh đến thùng phân loại theo màu (trắng, xanh, nâu)."},
+    {de:"Müll nur zu den festgelegten Zeiten rausbringen (siehe Aushang im Treppenhaus).",vi:"Chỉ đổ rác vào giờ quy định (xem thông báo ở cầu thang)."},
+    {de:"Sperrmüll: Große Gegenstände separat anmelden — NICHT einfach abstellen!",vi:"Rác cồng kềnh: Đồ lớn phải đăng ký riêng — KHÔNG được để bừa!"},
+    {de:"Müllraum sauber halten. Müll NICHT vor die Tür stellen.",vi:"Giữ phòng rác sạch sẽ. KHÔNG để rác trước cửa."},
+  ]},
   {catDe:"Allgemeines",catVi:"Tổng quát",icon:"📋",items:[{de:"Gegenseitiger Respekt.",vi:"Tôn trọng lẫn nhau."},{de:"Probleme direkt ansprechen.",vi:"Nói trực tiếp."},{de:"Monatliches WG-Meeting.",vi:"Họp WG hàng tháng."}]},
   {catDe:"Ruhezeiten",catVi:"Giờ yên tĩnh",icon:"🌙",items:[{de:"22:00–07:00 (Mo–Fr), 23:00–09:00 (Sa–So).",vi:"22:00–07:00 (T2–T6), 23:00–09:00 (T7–CN)."},{de:"Musik auf Zimmerlautstärke nach 22 Uhr.",vi:"Nhạc mức phòng sau 22h."}]},
   {catDe:"Küche",catVi:"Nhà bếp",icon:"🍳",items:[{de:"Geschirr sofort spülen.",vi:"Rửa bát ngay."},{de:"Herd nach Benutzung reinigen.",vi:"Lau bếp sau khi dùng."},{de:"Müll trennen.",vi:"Phân loại rác."}]},
