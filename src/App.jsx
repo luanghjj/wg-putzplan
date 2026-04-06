@@ -41,8 +41,8 @@ export default function App() {
     users: d.users || [],
     rooms: d.rooms || [],
     history: d.history || [],           // ← source of truth
-    weeklyAreas: d.weeklyAreas || DEF.weeklyAreas,
-    dailyTasks: d.dailyTasks || DEF.dailyTasks,
+    weeklyAreas: DEF.weeklyAreas,
+    dailyTasks: DEF.dailyTasks,
     announcements: d.announcements || [],
     reports: d.reports || [],
     tutorials: d.tutorials || {},
