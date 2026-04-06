@@ -213,10 +213,11 @@ export const DEF={
     {de:"Schuhe ordentlich aufstellen",vi:"Xếp giày gọn gàng",pts:1},
     {de:"Toilette nach Benutzung säubern",vi:"Vệ sinh toilet sau khi dùng",pts:1},
     {de:"Spüle trockenwischen",vi:"Lau khô bồn rửa",pts:1},
+    {de:"Boden nach Benutzung trocknen",vi:"Làm khô nền sau khi sử dụng (tắm, đánh răng, vệ sinh)",pts:1},
   ],
   weeklyAreas:[
     {id:"kitchen",color:"#3B82F6",bg:"#EFF6FF",tasks:[{de:"Küchenboden fegen & wischen",vi:"Quét & lau sàn bếp",pts:3},{de:"Spüle & Armaturen reinigen",vi:"Vệ sinh bồn rửa & vòi",pts:3},{de:"Herd, Backofen & Regale putzen",vi:"Chà bếp, lò nướng & kệ bếp",pts:3},{de:"Kühlschrank (innen & außen) & Schränke reinigen",vi:"Dọn tủ lạnh (trong & ngoài) & lau tủ bếp",pts:3},{de:"Mülleimer reinigen & Glastüren putzen",vi:"Rửa thùng rác & lau cửa kính",pts:2}]},
-    {id:"bathroom",color:"#F59E0B",bg:"#FFFBEB",tasks:[{de:"Toilette putzen (innen & außen)",vi:"Vệ sinh toilet",pts:3},{de:"Waschbecken & Spiegel reinigen",vi:"Lau bồn rửa & gương",pts:3},{de:"Dusche / Badewanne reinigen",vi:"Vệ sinh vòi sen / bồn tắm",pts:3},{de:"Boden saugen & wischen",vi:"Hút bụi & lau sàn",pts:3},{de:"Handtücher wechseln, Regale ordnen & Waschmaschine reinigen",vi:"Thay khăn, sắp kệ gọn & vệ sinh máy giặt",pts:2}]},
+    {id:"bathroom",color:"#F59E0B",bg:"#FFFBEB",tasks:[{de:"Toilette putzen (innen & außen)",vi:"Vệ sinh toilet",pts:3},{de:"Waschbecken & Spiegel reinigen",vi:"Lau bồn rửa & gương",pts:3},{de:"Dusche / Badewanne reinigen",vi:"Vệ sinh vòi sen / bồn tắm",pts:3},{de:"Boden saugen & wischen",vi:"Hút bụi & lau sàn",pts:3},{de:"Handtücher wechseln, Regale ordnen & Waschmaschine reinigen",vi:"Thay khăn, sắp kệ gọn & vệ sinh máy giặt",pts:2},{de:"Badezimmer 2. OG trocknen",vi:"Làm sạch khô nhà tắm tầng 2",pts:2}]},
     {id:"common",color:"#10B981",bg:"#ECFDF5",tasks:[{de:"Flur, Eingang & Treppenhaus reinigen, Schuhe ordnen",vi:"Lau hành lang, cửa ra vào & cầu thang, xếp giày gọn",pts:3},{de:"Wohnzimmer saugen & Böden wischen",vi:"Hút bụi phòng khách & lau sàn khu vực chung",pts:3},{de:"Tische, Regale, Türgriffe & Lichtschalter abwischen",vi:"Lau bàn, kệ, tay nắm cửa & công tắc đèn",pts:2},{de:"Fenster reinigen & Balkon aufräumen",vi:"Lau cửa sổ & dọn ban công",pts:3},{de:"Müll rausbringen & Mülleimer reinigen",vi:"Đổ rác khi đầy & rửa thùng rác",pts:2}]},
   ],
 };
