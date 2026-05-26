@@ -129,7 +129,9 @@ async function saveAnnouncements(ns, prev) {
     await supabase.from("announcements").upsert(
       anns.map((a) => ({
         id: a.id, title: a.title || null, message: a.body || null,
-        author: a.createdBy || null, ts: a.createdAt || null, read_by: a.readBy || [],
+        author: a.createdBy || null, ts: a.createdAt || null,
+        level: a.level || "normal",
+        read_by: a.readBy || [],
       }))
     );
   }

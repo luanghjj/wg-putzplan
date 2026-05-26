@@ -12,22 +12,29 @@ export function compImg(file,mw=400,q=0.5){return new Promise(res=>{const r=new 
 
 export function getDeadline(wk){
   const w=Number(wk);
-  // ISO week date: find the Thursday of the target week, then get Sunday
-  // Jan 4 is always in ISO week 1
-  const jan4=new Date(Date.UTC(new Date().getFullYear(),0,4));
-  const jan4Day=jan4.getUTCDay()||7; // Mon=1..Sun=7
-  // Monday of week 1
-  const mon1=new Date(jan4);
-  mon1.setUTCDate(mon1.getUTCDate()-(jan4Day-1));
-  // Monday of target week
-  const monW=new Date(mon1);
-  monW.setUTCDate(monW.getUTCDate()+(w-1)*7);
-  // Sunday of target week = Monday + 6
-  const sun=new Date(monW);
-  sun.setUTCDate(sun.getUTCDate()+6);
-  sun.setUTCHours(23,59,59);
-  return sun;
+  // Use ISO week year based on today — handles week 52/53 spanning year boundary
+  const now=new Date();
+  // Find the ISO year: if current week > w by a lot, we might be in the next year's week 1
+  // Simple: use the year that makes the week closest to now
+  const tryYear=(y)=>{
+    const jan4=new Date(Date.UTC(y,0,4));
+    const jan4Day=jan4.getUTCDay()||7;
+    const mon1=new Date(jan4);
+    mon1.setUTCDate(mon1.getUTCDate()-(jan4Day-1));
+    const monW=new Date(mon1);
+    monW.setUTCDate(monW.getUTCDate()+(w-1)*7);
+    const sun=new Date(monW);
+    sun.setUTCDate(sun.getUTCDate()+6);
+    sun.setUTCHours(23,59,59);
+    return sun;
+  };
+  const y=now.getFullYear();
+  // Pick the year whose deadline is closest to today (handles year-end edge cases)
+  const d0=tryYear(y-1),d1=tryYear(y),d2=tryYear(y+1);
+  const best=[d0,d1,d2].reduce((a,b)=>Math.abs(b-now)<Math.abs(a-now)?b:a);
+  return best;
 }
+
 export function getTimeLeft(wk){
   const dl=getDeadline(wk),now=new Date(),diff=dl-now;
   if(diff<=0)return{overdue:true,hours:0,text:""};
