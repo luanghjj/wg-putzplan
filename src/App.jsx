@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "./data/i18n";
 import { OWNER, DEF } from "./data/constants";
-import { storage, SK, onDataChange, refPhotoStorage, historyDB } from "./data/storage";
+import { storage, SK, onDataChange, refPhotoStorage, historyDB, cleanupOldPhotos } from "./data/storage";
 import { gwk, grot, fd, ft, gmo, getToday, getTimeLeft } from "./utils/helpers";
 import { F, C, btnG, ov, mod, globalCSS } from "./styles";
 import { supabase } from "./data/supabase";
@@ -73,6 +73,8 @@ export default function App() {
           }
         } else setSt(safeSt({ ...DEF }));
         if (p?.value) setPh(JSON.parse(p.value));
+        // Auto-cleanup: delete proof photos older than 30 days (runs silently)
+        cleanupOldPhotos().catch(() => {});
       } catch (e) { console.error('Load error:', e); setSt({ ...DEF }); }
       setLd(false);
     })();

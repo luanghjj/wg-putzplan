@@ -248,6 +248,25 @@ export const storage = {
   },
 };
 
+// ---- Auto-cleanup: delete photos older than 30 days ----
+export async function cleanupOldPhotos() {
+  try {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const cutoffISO = cutoff.toISOString();
+
+    const { error } = await supabase
+      .from("photos")
+      .delete()
+      .lt("created_at", cutoffISO);
+
+    if (error) console.warn("cleanupOldPhotos error:", error.message);
+    else console.log("✅ Old photos cleaned up (>30 days)");
+  } catch (e) {
+    console.warn("cleanupOldPhotos exception:", e);
+  }
+}
+
 // ---- RefPhoto helpers ----
 export const refPhotoStorage = {
   async setOne(taskKey, base64Data) {
