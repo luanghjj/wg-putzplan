@@ -30,7 +30,12 @@ export default function ReportScreen({t,st,sv,user,show}){
       const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
       streamRef.current=stream;
       setCamOpen(true);
-      setTimeout(()=>{if(videoRef.current){videoRef.current.srcObject=stream;videoRef.current.play();}},100);
+      setTimeout(()=>{
+        if(videoRef.current){
+          videoRef.current.srcObject=stream;
+          videoRef.current.play().catch(()=>{});
+        }
+      },100);
     }catch{
       const inp=document.createElement("input");
       inp.type="file";inp.accept="image/*";inp.capture="environment";
@@ -41,6 +46,7 @@ export default function ReportScreen({t,st,sv,user,show}){
   const snap=async()=>{
     const v=videoRef.current,c=canvasRef.current;
     if(!v||!c)return;
+    if(!v.videoWidth||!v.videoHeight)return;
     c.width=v.videoWidth;c.height=v.videoHeight;
     c.getContext("2d").drawImage(v,0,0);
     const blob=await(await fetch(c.toDataURL("image/jpeg",0.6))).blob();

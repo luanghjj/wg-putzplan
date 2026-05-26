@@ -110,7 +110,9 @@ export default function LeaderScreen({t,st,user}){
           return{...r,pts};
         });
         if(residents.length<2)return null;
-        const minPts=10; 
+        // minPts = total pts of all daily tasks in a week (7 days × sum of daily pts)
+        const dailyPtsPerDay=st.dailyTasks.reduce((s,t)=>s+(t.pts||1),0);
+        const minPts=Math.max(dailyPtsPerDay*7,1);
         const maxDiff=st.maxDiffPercent||30;
         const maxPts=Math.max(...residents.map(r=>r.pts));
         const minEarned=Math.min(...residents.map(r=>r.pts));
@@ -148,7 +150,8 @@ export default function LeaderScreen({t,st,user}){
         st.rooms.forEach(room=>{
           const residents=(room.residents||[]).map(r=>({...r,pts:confirmed.filter(h=>h.person===r.name&&h.week==wk).reduce((s,h)=>s+(h.pts||1),0)}));
           if(residents.length<2)return;
-          const minPts=10;
+          const dailyPtsPerDay=st.dailyTasks.reduce((s,t)=>s+(t.pts||1),0);
+          const minPts=Math.max(dailyPtsPerDay*7,1);
           residents.forEach(r=>{if(r.pts<minPts)totalPersonPen+=(minPts-r.pts)*(st.penaltyPerMissingPoint||2);});
         });
         return totalPersonPen>0?<div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 0 0",marginTop:4,borderTop:`2px solid ${C.border}`}}><strong style={{fontSize:13,color:C.text}}>{t.penaltyTotal} ({t.fairness})</strong><strong style={{fontSize:15,color:C.red}}>{totalPersonPen.toFixed(2)}€</strong></div>:
