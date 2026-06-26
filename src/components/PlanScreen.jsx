@@ -274,11 +274,11 @@ export default function PlanScreen({ t, st, user, hp, doDone, doUndo, isC, isDai
           </div>
         </div>
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <svg width="52" height="52" viewBox="0 0 52 52">
+          <svg width="52" height="52" viewBox="0 0 52 52" style={pct === 100 ? { animation: "floaty 2.6s ease-in-out infinite" } : undefined}>
             <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth="4" />
-            <circle cx="26" cy="26" r="22" fill="none" stroke={C.accent} strokeWidth="4" strokeDasharray={`${pct * 1.382} 138.2`} strokeLinecap="round" transform="rotate(-90 26 26)" style={{ transition: "stroke-dasharray 0.5s ease" }} />
+            <circle cx="26" cy="26" r="22" fill="none" stroke={pct === 100 ? C.green : C.accent} strokeWidth="4" strokeDasharray={`${pct * 1.382} 138.2`} strokeLinecap="round" transform="rotate(-90 26 26)" style={{ transition: "stroke-dasharray 0.5s ease, stroke 0.3s ease" }} />
           </svg>
-          <span style={{ position: "absolute", fontSize: 12, fontWeight: 700, color: C.accent, fontFamily: F }}>{pct}%</span>
+          <span style={{ position: "absolute", fontSize: pct === 100 ? 16 : 12, fontWeight: 700, color: pct === 100 ? C.green : C.accent, fontFamily: F }}>{pct === 100 ? "🎉" : `${pct}%`}</span>
         </div>
       </div>
 

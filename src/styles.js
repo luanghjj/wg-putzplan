@@ -112,6 +112,8 @@ export const globalCSS = `
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
 @keyframes gradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes shine{0%{transform:translateX(-120%) skewX(-20deg)}60%,100%{transform:translateX(320%) skewX(-20deg)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
 input:focus,select:focus,textarea:focus{background:rgba(0,122,255,0.06)!important;box-shadow:0 0 0 3px rgba(0,122,255,0.12)!important}
 button{transition:all .2s cubic-bezier(0.25,0.1,0.25,1)}
 button:active{transform:scale(.97)!important;opacity:.9!important}
