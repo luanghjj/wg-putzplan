@@ -39,7 +39,7 @@ export default function ReportScreen({t,st,sv,user,show}){
     }catch{
       const inp=document.createElement("input");
       inp.type="file";inp.accept="image/*";inp.capture="environment";
-      inp.onchange=async(e)=>{const f=e.target.files?.[0];if(f)setPhoto(await compImg(f,600,.6));};
+      inp.onchange=async(e)=>{const f=e.target.files?.[0];if(!f)return;try{setPhoto(await compImg(f,600,.6));}catch{show&&show("Lỗi đọc ảnh, thử lại!","error");}};
       inp.click();
     }
   };
@@ -49,9 +49,11 @@ export default function ReportScreen({t,st,sv,user,show}){
     if(!v.videoWidth||!v.videoHeight)return;
     c.width=v.videoWidth;c.height=v.videoHeight;
     c.getContext("2d").drawImage(v,0,0);
-    const blob=await(await fetch(c.toDataURL("image/jpeg",0.6))).blob();
-    const file=new File([blob],"report.jpg",{type:"image/jpeg"});
-    setPhoto(await compImg(file,600,0.6));
+    try{
+      const blob=await(await fetch(c.toDataURL("image/jpeg",0.6))).blob();
+      const file=new File([blob],"report.jpg",{type:"image/jpeg"});
+      setPhoto(await compImg(file,600,0.6));
+    }catch{show&&show("Lỗi chụp ảnh, thử lại!","error");}
     closeCam();
   };
   const closeCam=()=>{

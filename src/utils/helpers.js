@@ -8,7 +8,55 @@ export function getToday(){
   const fmt=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Berlin",year:"numeric",month:"2-digit",day:"2-digit"});
   return fmt.format(new Date());
 }
-export function compImg(file,mw=400,q=0.5){return new Promise(res=>{const r=new FileReader();r.onload=e=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");const rt=Math.min(mw/img.width,mw/img.height,1);c.width=img.width*rt;c.height=img.height*rt;c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",q));};img.src=e.target.result;};r.readAsDataURL(file);});}
+// iPhone photos are often HEIC/HEIF, which browsers can't draw to a <canvas>.
+// Detect by MIME type or extension (iOS sometimes reports an empty type).
+function isHeic(file){
+  const type=(file.type||"").toLowerCase();
+  if(type==="image/heic"||type==="image/heif")return true;
+  const name=(file.name||"").toLowerCase();
+  return name.endsWith(".heic")||name.endsWith(".heif");
+}
+
+// Convert a HEIC/HEIF file to a JPEG blob. heic2any is loaded lazily so it
+// only adds to the bundle download when an iPhone user actually picks a HEIC.
+async function heicToJpeg(file){
+  const { default: heic2any }=await import("heic2any");
+  const out=await heic2any({ blob:file, toType:"image/jpeg", quality:0.8 });
+  const blob=Array.isArray(out)?out[0]:out;
+  return new File([blob],(file.name||"photo").replace(/\.[^.]+$/,"")+".jpg",{type:"image/jpeg"});
+}
+
+export async function compImg(file,mw=400,q=0.5){
+  // HEIC can't be decoded by <img>; convert to JPEG first.
+  if(isHeic(file)){
+    try{ file=await heicToJpeg(file); }
+    catch(err){ throw new Error("HEIC conversion failed: "+(err?.message||err)); }
+  }
+  return new Promise((res,rej)=>{
+    // Safety net: if an image still never decodes, neither onload nor onerror
+    // may fire on some browsers — reject after a timeout so callers don't hang.
+    const timer=setTimeout(()=>rej(new Error("compImg timeout")),15000);
+    const done=v=>{clearTimeout(timer);res(v);};
+    const fail=e=>{clearTimeout(timer);rej(e instanceof Error?e:new Error("compImg failed"));};
+    const r=new FileReader();
+    r.onerror=()=>fail(new Error("FileReader error"));
+    r.onload=e=>{
+      const img=new Image();
+      img.onerror=()=>fail(new Error("Image decode error"));
+      img.onload=()=>{
+        try{
+          const c=document.createElement("canvas");
+          const rt=Math.min(mw/img.width,mw/img.height,1);
+          c.width=img.width*rt;c.height=img.height*rt;
+          c.getContext("2d").drawImage(img,0,0,c.width,c.height);
+          done(c.toDataURL("image/jpeg",q));
+        }catch(err){fail(err);}
+      };
+      img.src=e.target.result;
+    };
+    r.readAsDataURL(file);
+  });
+}
 
 export function getDeadline(wk){
   const w=Number(wk);

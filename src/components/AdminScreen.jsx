@@ -35,7 +35,7 @@ function TaskMgr({t,st,sv,show,srp}){
   const dD=i=>{sv({...st,dailyTasks:st.dailyTasks.filter((_,idx)=>idx!==i)});};
   const aW=()=>{if(!nd.trim())return;sv({...st,weeklyAreas:st.weeklyAreas.map(a=>a.id===aid?{...a,tasks:[...a.tasks,{de:nd.trim(),vi:nv.trim()||nd.trim(),pts:Number(npts)||3}]}:a)});setNd("");setNv("");setNpts(3);show("✓");};
   const dW=(ai,ti)=>{sv({...st,weeklyAreas:st.weeklyAreas.map(a=>a.id===ai?{...a,tasks:a.tasks.filter((_,i)=>i!==ti)}:a)});};
-  const uRef=async(taskDe,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,600,.6);const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;const newRp={...(st.refPhotos||{}),[key]:img};srp(newRp,key,false);show("📸 ✓");};
+  const uRef=async(taskDe,e)=>{const f=e.target.files?.[0];if(!f)return;try{const img=await compImg(f,600,.6);const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;const newRp={...(st.refPhotos||{}),[key]:img};srp(newRp,key,false);show("📸 ✓");}catch{show("Lỗi đọc ảnh, thử lại!","error");}};
   const dRef=(taskDe)=>{const r={...(st.refPhotos||{})};const key=normRefKey(taskDe)||`task-${taskDe.trim()}`;delete r[key];srp(r,key,true);};
   const openTutEdit=(taskDe)=>{const key=normTaskKey(taskDe)||`task-${taskDe}`;const existing=st.tutorials?.[key];setEditTut(taskDe);setTutSteps(existing?.steps?existing.steps.map(s=>({...s})):[{textDe:"",textVi:"",photo:null}]);setTutVideo(existing?.videoUrl||"");};
   const saveTut=()=>{const key=normTaskKey(editTut)||`task-${editTut}`;const validSteps=tutSteps.filter(s=>s.textDe.trim()||s.textVi.trim()||s.photo);sv({...st,tutorials:{...(st.tutorials||{}),[key]:{steps:validSteps,videoUrl:tutVideo.trim()}}});setEditTut(null);show("📖 ✓");};
@@ -43,7 +43,7 @@ function TaskMgr({t,st,sv,show,srp}){
   const addTutStep=()=>setTutSteps(s=>[...s,{textDe:"",textVi:"",photo:null}]);
   const rmTutStep=i=>setTutSteps(s=>s.filter((_,idx)=>idx!==i));
   const updStep=(i,field,val)=>setTutSteps(s=>s.map((x,idx)=>idx===i?{...x,[field]:val}:x));
-  const stepPhoto=async(i,e)=>{const f=e.target.files?.[0];if(!f)return;const img=await compImg(f,500,.5);updStep(i,"photo",img);};
+  const stepPhoto=async(i,e)=>{const f=e.target.files?.[0];if(!f)return;try{const img=await compImg(f,500,.5);updStep(i,"photo",img);}catch{show("Lỗi đọc ảnh, thử lại!","error");}};
 
   const TaskItem=({task,onDel})=>{
     const refKey=normRefKey(task.de);const hasRef=!!st.refPhotos?.[refKey];const tutKey=normTaskKey(task.de);const hasTut=st.tutorials?.[tutKey]?.steps?.length>0;

@@ -36,13 +36,15 @@ export default function PlanScreen({ t, st, user, hp, doDone, doUndo, isC, isDai
     return user.roomId === rot[ai];
   };
 
-  // Submit task (requires photo)
-  const doT = (tk, ai) => {
+  // Submit task (requires photo) — wait for doDone to succeed before clearing photo from state
+  const doT = async (tk, ai) => {
     const k = `${ai}-${tk}`;
     if (!tp[k]) { setErr(k); return; }
-    doDone(tk, ai, tp[k]);
-    setTP(p => { const n = { ...p }; delete n[k]; return n; });
+    const photo = tp[k];
     setErr("");
+    await doDone(tk, ai, photo);
+    // Only clear photo state after successful save
+    setTP(p => { const n = { ...p }; delete n[k]; return n; });
   };
 
   // Weekly progress bar

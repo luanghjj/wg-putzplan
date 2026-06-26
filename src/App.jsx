@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { T } from "./data/i18n";
 import { OWNER, DEF } from "./data/constants";
-import { storage, SK, onDataChange, refPhotoStorage, historyDB, cleanupOldPhotos } from "./data/storage";
+import { storage, SK, onDataChange, refPhotoStorage, historyDB, photoDB, cleanupOldPhotos } from "./data/storage";
 import { gwk, grot, fd, ft, gmo, getToday, getTimeLeft } from "./utils/helpers";
 import { F, C, btnG, ov, mod, globalCSS } from "./styles";
-import { supabase } from "./data/supabase";
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -49,7 +48,9 @@ export default function App() {
     rolePerms: d.rolePerms || DEF.rolePerms,
   });
 
-  const skipSync = useRef(0);
+  const skipSyncData = useRef(0);
+  const skipSyncPhotos = useRef(0);
+  const skipSyncRefPhotos = useRef(0);
 
   useEffect(() => {
     (async () => {
@@ -82,17 +83,17 @@ export default function App() {
 
   useEffect(() => {
     const unsub1 = onDataChange(SK.data, (val) => {
-      if (skipSync.current > 0) { skipSync.current--; return; }
+      if (skipSyncData.current > 0) { skipSyncData.current--; return; }
       const d = safeSt({ ...DEF, ...val });
       if (!d.users?.some(u => u.id === "owner-1")) d.users = [{ ...OWNER }, ...(d.users || [])];
       setSt(d);
     });
     const unsub2 = onDataChange(SK.photos, (val) => {
-      if (skipSync.current > 0) { skipSync.current--; return; }
+      if (skipSyncPhotos.current > 0) { skipSyncPhotos.current--; return; }
       setPh(val || {});
     });
     const unsub3 = onDataChange(SK.refPhotos, (val) => {
-      if (skipSync.current > 0) { skipSync.current--; return; }
+      if (skipSyncRefPhotos.current > 0) { skipSyncRefPhotos.current--; return; }
       if (val && typeof val === "object") setRp(val);
     });
     return () => { unsub1(); unsub2(); unsub3(); };
@@ -101,15 +102,15 @@ export default function App() {
   // sv: save non-history state (config, users, rooms, etc.)
   const sv = async ns => {
     setSt(ns);
-    skipSync.current++;
+    skipSyncData.current++;
     try { await storage.set(SK.data, JSON.stringify(ns)); }
-    catch { skipSync.current = Math.max(0, skipSync.current - 1); }
+    catch { skipSyncData.current = Math.max(0, skipSyncData.current - 1); }
   };
   const sp = async np => {
     setPh(np);
-    skipSync.current++;
+    skipSyncPhotos.current++;
     try { await storage.set(SK.photos, JSON.stringify(np)); }
-    catch { skipSync.current = Math.max(0, skipSync.current - 1); }
+    catch { skipSyncPhotos.current = Math.max(0, skipSyncPhotos.current - 1); }
   };
 
   const show = (m, ty = "success") => { setToast({ m, ty }); setTimeout(() => setToast(null), 2500); };
@@ -118,6 +119,7 @@ export default function App() {
   const t = st ? T[st.lang || "de"] : T.de;
 
   const srp = async (newRp, changedKey, deleted) => {
+    skipSyncRefPhotos.current++;
     if (changedKey) {
       if (deleted) await refPhotoStorage.deleteOne(changedKey);
       else if (newRp[changedKey]) await refPhotoStorage.setOne(changedKey, newRp[changedKey]);
@@ -183,11 +185,15 @@ export default function App() {
     // Update local state (optimistic)
     setSt(prev => ({ ...prev, history: [...(prev.history || []), saved] }));
 
-    // Save photo if provided
+    // Save photo if provided — upsert single row, safe for concurrent submissions
     if (photo) {
-      skipSync.current++;
-      await storage.set(SK.photos, JSON.stringify({ ...ph, [photoKey]: photo })).catch(() => {});
-      setPh(prev => ({ ...prev, [photoKey]: photo }));
+      skipSyncPhotos.current++;
+      const ok = await photoDB.upsertOne(photoKey, photo);
+      if (ok) {
+        setPh(prev => ({ ...prev, [photoKey]: photo }));
+      } else {
+        skipSyncPhotos.current = Math.max(0, skipSyncPhotos.current - 1);
+      }
     }
 
     show(isDaily
@@ -221,11 +227,10 @@ export default function App() {
     await historyDB.remove(entry.id);
     setSt(prev => ({ ...prev, history: (prev.history || []).filter(h => h.id !== entry.id) }));
 
-    // Remove photo
-    if (entry.photoKey && ph[entry.photoKey]) {
-      const np = { ...ph };
-      delete np[entry.photoKey];
-      await sp(np);
+    // Remove photo — delete single row by key
+    if (entry.photoKey) {
+      await photoDB.deleteOne(entry.photoKey);
+      setPh(prev => { const n = { ...prev }; delete n[entry.photoKey]; return n; });
     }
   };
 
@@ -256,11 +261,10 @@ export default function App() {
     await historyDB.remove(historyId);
     setSt(prev => ({ ...prev, history: (prev.history || []).filter(h => h.id !== historyId) }));
 
-    // Remove photo
-    if (entry.photoKey && ph[entry.photoKey]) {
-      const np = { ...ph };
-      delete np[entry.photoKey];
-      await sp(np);
+    // Remove photo — delete single row by key
+    if (entry.photoKey) {
+      await photoDB.deleteOne(entry.photoKey);
+      setPh(prev => { const n = { ...prev }; delete n[entry.photoKey]; return n; });
     }
 
     show(st.lang === "de" ? "✗ Abgelehnt — bitte nochmal erledigen" : "✗ Từ chối — vui lòng làm lại", "error");

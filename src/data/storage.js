@@ -209,6 +209,21 @@ export const historyDB = {
   },
 };
 
+// ---- Direct photo CRUD (safe: no diff/delete-all, no race condition) ----
+export const photoDB = {
+  // Upsert a single photo by key (safe for concurrent submissions)
+  async upsertOne(key, data) {
+    const { error } = await supabase.from("photos").upsert({ key, data });
+    if (error) console.error("photos.upsertOne error:", error.message);
+    return !error;
+  },
+  // Delete a single photo by key
+  async deleteOne(key) {
+    const { error } = await supabase.from("photos").delete().eq("key", key);
+    if (error) console.error("photos.deleteOne error:", error.message);
+  },
+};
+
 // ---- Public API ----
 export const storage = {
   async get(key) {

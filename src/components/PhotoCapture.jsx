@@ -8,6 +8,7 @@ export default function PhotoCapture({ t, onCap, photo }) {
   const streamRef = useRef();
   const [camera, setCamera] = useState(false);
   const [camErr, setCamErr] = useState("");
+  const [busy, setBusy] = useState(false);
 
   // Cleanup camera stream when component unmounts
   useEffect(() => {
@@ -50,12 +51,22 @@ export default function PhotoCapture({ t, onCap, photo }) {
 
   const useFallback = () => {
     const inp = document.createElement("input");
-    inp.type = "file";
     inp.accept = "image/*";
-    inp.capture = "environment";
+    inp.capture = "environment"; // must be set before type on some browsers
+    inp.type = "file";
     inp.onchange = async (e) => {
       const f = e.target.files?.[0];
-      if (f) onCap(await compImg(f, 400, 0.5));
+      if (!f) return;
+      setBusy(true);
+      try {
+        const compressed = await compImg(f, 400, 0.5);
+        if (compressed) onCap(compressed);
+        else setCamErr("Không đọc được ảnh, thử lại!");
+      } catch {
+        setCamErr("Không đọc được ảnh, thử lại!");
+      } finally {
+        setBusy(false);
+      }
     };
     inp.click();
   };
@@ -71,6 +82,7 @@ export default function PhotoCapture({ t, onCap, photo }) {
     c.width = v.videoWidth;
     c.height = v.videoHeight;
     c.getContext("2d").drawImage(v, 0, 0);
+    setBusy(true);
     try {
       const dataUrl = c.toDataURL("image/jpeg", 0.5);
       const blob = await (await fetch(dataUrl)).blob();
@@ -80,6 +92,8 @@ export default function PhotoCapture({ t, onCap, photo }) {
       closeCam();
     } catch {
       setCamErr("Lỗi chụp ảnh, thử lại!");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -106,22 +120,24 @@ export default function PhotoCapture({ t, onCap, photo }) {
           <canvas ref={canvasRef} style={{ display: "none" }} />
           {camErr && <p style={{ color: "#f87171", fontSize: 12, textAlign: "center", margin: "4px 0 0", fontFamily: F }}>{camErr}</p>}
           <div style={{ display: "flex", gap: 8, padding: 8, justifyContent: "center" }}>
-            <button style={{ padding: "8px 20px", background: "#3B82F6", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: F }} onClick={snap}>
-              📸 Chụp
+            <button disabled={busy} style={{ padding: "8px 20px", background: busy ? "#93C5FD" : "#3B82F6", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: busy ? "default" : "pointer", fontFamily: F }} onClick={snap}>
+              {busy ? "⏳ Đang xử lý…" : "📸 Chụp"}
             </button>
-            <button style={{ padding: "8px 14px", background: "rgba(0,0,0,0.3)", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, cursor: "pointer", fontFamily: F }} onClick={closeCam}>
+            <button disabled={busy} style={{ padding: "8px 14px", background: "rgba(0,0,0,0.3)", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, cursor: busy ? "default" : "pointer", fontFamily: F }} onClick={closeCam}>
               ✕
             </button>
           </div>
         </div>
       ) : (
         <button
-          style={{ width: "calc(100% - 32px)", padding: 8, background: "#EFF6FF", border: "2px dashed #93C5FD", borderRadius: 10, color: "#3B82F6", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: F }}
+          disabled={busy}
+          style={{ width: "calc(100% - 32px)", padding: 8, background: "#EFF6FF", border: "2px dashed #93C5FD", borderRadius: 10, color: "#3B82F6", fontSize: 13, fontWeight: 600, cursor: busy ? "default" : "pointer", fontFamily: F }}
           onClick={openCam}
         >
-          📸 {t.takePhoto}
+          {busy ? "⏳ Đang xử lý…" : `📸 ${t.takePhoto}`}
         </button>
       )}
+      {camErr && !camera && <p style={{ color: "#f87171", fontSize: 12, margin: "4px 0 0", fontFamily: F }}>{camErr}</p>}
     </div>
   );
 }
