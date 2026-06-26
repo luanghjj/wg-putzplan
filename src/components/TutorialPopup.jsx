@@ -10,7 +10,7 @@ export default function TutorialPopup({t,lang,tut,onClose}){
     </div>
     <div style={{padding:"12px 20px 20px"}}>
       {steps.map((s,i)=> <div key={i} style={{display:"flex",gap:12,marginBottom:16,paddingBottom:16,borderBottom:i<steps.length-1?"1px solid #F1F5F9":"none"}}>
-        <div style={{width:28,height:28,borderRadius:"50%",background:"#3B82F6",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13,fontFamily:F,flexShrink:0}}>{i+1}</div>
+        <div style={{width:28,height:28,borderRadius:"50%",background:"#10B981",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700,fontSize:13,fontFamily:F,flexShrink:0}}>{i+1}</div>
         <div style={{flex:1}}>
           <div style={{fontSize:14,color:"#1E293B",fontWeight:500,marginBottom:4}}>{lang==="de"?s.textDe:s.textVi}</div>
           {s.textVi&&lang==="de"&&<div style={{fontSize:12,color:"#94A3B8",marginBottom:6}}>{s.textVi}</div>}

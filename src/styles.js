@@ -7,14 +7,14 @@ export const F = "-apple-system, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neu
 
 /* Colors — refined palette */
 export const C = {
-  bg: "#F2F2F7",
+  bg: "#EFF6F2",
   white: "#FFFFFF",
   surface: "rgba(255,255,255,0.82)",
   surfaceElevated: "#FFFFFF",
   text: "#1C1C1E",
   textSecondary: "#8E8E93",
-  accent: "#007AFF",
-  accentHover: "#0A84FF",
+  accent: "#10B981",
+  accentHover: "#34D399",
   green: "#30D158",
   red: "#FF453A",
   orange: "#FF9F0A",
@@ -54,7 +54,7 @@ export const btnP = {
   letterSpacing:"-0.01em",
 };
 export const btnG = {
-  padding:"14px 28px", background:"rgba(0,122,255,0.08)", color:C.accent,
+  padding:"14px 28px", background:"rgba(16,185,129,0.08)", color:C.accent,
   border:"none", borderRadius:980, fontSize:17, fontWeight:600,
   cursor:"pointer", fontFamily:F,
   transition:"all 0.25s cubic-bezier(0.25,0.1,0.25,1)",
@@ -114,9 +114,9 @@ export const globalCSS = `
 @keyframes gradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 @keyframes shine{0%{transform:translateX(-120%) skewX(-20deg)}60%,100%{transform:translateX(320%) skewX(-20deg)}}
 @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
-input:focus,select:focus,textarea:focus{background:rgba(0,122,255,0.06)!important;box-shadow:0 0 0 3px rgba(0,122,255,0.12)!important}
+input:focus,select:focus,textarea:focus{background:rgba(16,185,129,0.06)!important;box-shadow:0 0 0 3px rgba(16,185,129,0.12)!important}
 button{transition:all .2s cubic-bezier(0.25,0.1,0.25,1)}
 button:active{transform:scale(.97)!important;opacity:.9!important}
-::selection{background:rgba(0,122,255,0.18)}
+::selection{background:rgba(16,185,129,0.18)}
 *{-webkit-tap-highlight-color:transparent}
 `;

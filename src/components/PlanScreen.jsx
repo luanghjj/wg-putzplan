@@ -117,7 +117,7 @@ export default function PlanScreen({ t, st, user, hp, doDone, doUndo, isC, isDai
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 12, color: C.textSecondary }}>{lang === "de" ? task.vi : task.de}</span>
-                {hasRef && <button style={{ background: "rgba(0,122,255,0.08)", border: "none", padding: "3px 10px", borderRadius: 980, fontSize: 11, color: C.accent, cursor: "pointer", fontFamily: F, fontWeight: 600 }}
+                {hasRef && <button style={{ background: "rgba(16,185,129,0.08)", border: "none", padding: "3px 10px", borderRadius: 980, fontSize: 11, color: C.accent, cursor: "pointer", fontFamily: F, fontWeight: 600 }}
                   onClick={() => setShowRef(p => ({ ...p, [k]: !p[k] }))}>
                   {lang === "de" ? "Referenzfoto" : "Ảnh tham chiếu"} {refOpen ? "↑" : "↓"}
                 </button>}
@@ -158,7 +158,7 @@ export default function PlanScreen({ t, st, user, hp, doDone, doUndo, isC, isDai
             <div style={{ marginTop: 4, marginLeft: 32 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                 <span style={dBdg}>{histEntry.person} · {ft(histEntry.timestamp)} · +{histEntry.pts || task.pts}⭐</span>
-                {photoUrl && <button style={{ ...dBdg, cursor: "pointer", background: "rgba(0,113,227,0.08)", color: C.accent }} onClick={() => vp(photoUrl)}>📷</button>}
+                {photoUrl && <button style={{ ...dBdg, cursor: "pointer", background: "rgba(16,185,129,0.08)", color: C.accent }} onClick={() => vp(photoUrl)}>📷</button>}
                 {statusBadge(histEntry)}
               </div>
             </div>
@@ -171,7 +171,7 @@ export default function PlanScreen({ t, st, user, hp, doDone, doUndo, isC, isDai
             </>
           )}
         </div>
-        <div style={{ fontSize: 12, fontWeight: 700, color: area?.color || C.accent, background: area?.bg || "rgba(0,113,227,0.06)", padding: "3px 10px", borderRadius: 8, flexShrink: 0, alignSelf: "flex-start" }}>+{task.pts}⭐</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: area?.color || C.accent, background: area?.bg || "rgba(16,185,129,0.08)", padding: "3px 10px", borderRadius: 8, flexShrink: 0, alignSelf: "flex-start" }}>+{task.pts}⭐</div>
       </div>
     );
   };

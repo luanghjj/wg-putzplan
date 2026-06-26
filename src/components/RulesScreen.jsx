@@ -5,7 +5,7 @@ import { compImg } from "../utils/helpers";
 import { supabase } from "../data/supabase";
 
 const categoryColors = [
-  {gradient:"linear-gradient(135deg, #007AFF, #5856D6)", light:"rgba(0,122,255,0.06)"},
+  {gradient:"linear-gradient(135deg, #10B981, #0D9488)", light:"rgba(16,185,129,0.06)"},
   {gradient:"linear-gradient(135deg, #5856D6, #BF5AF2)", light:"rgba(88,86,214,0.06)"},
   {gradient:"linear-gradient(135deg, #FF9F0A, #FF375F)", light:"rgba(255,159,10,0.06)"},
   {gradient:"linear-gradient(135deg, #30D158, #64D2FF)", light:"rgba(48,209,88,0.06)"},
@@ -206,8 +206,8 @@ export default function RulesScreen({t,lang,st,user,sv,show}){
               style={{
                 width:"100%",
                 padding:"12px 16px",
-                background:uploading?"rgba(120,120,128,0.08)":"rgba(0,122,255,0.06)",
-                border:"2px dashed rgba(0,122,255,0.2)",
+                background:uploading?"rgba(120,120,128,0.08)":"rgba(16,185,129,0.06)",
+                border:"2px dashed rgba(16,185,129,0.25)",
                 borderRadius:12,
                 color:uploading?C.textSecondary:C.accent,
                 fontSize:14,fontWeight:600,

@@ -104,12 +104,12 @@ export default function ReportScreen({t,st,sv,user,show}){
       <div style={{
         display:"flex",alignItems:"center",gap:10,
         padding:"12px 16px",borderRadius:14,
-        background:"linear-gradient(135deg,rgba(48,209,88,0.08),rgba(0,122,255,0.06))",
+        background:"linear-gradient(135deg,rgba(48,209,88,0.08),rgba(16,185,129,0.08))",
         border:"1px solid rgba(48,209,88,0.15)",
       }}>
         <div style={{
           width:36,height:36,borderRadius:10,flexShrink:0,
-          background:"linear-gradient(135deg,#30D158,#007AFF)",
+          background:"linear-gradient(135deg,#30D158,#10B981)",
           display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,
         }}>🔒</div>
         <div>
@@ -133,7 +133,7 @@ export default function ReportScreen({t,st,sv,user,show}){
       {/* Category */}
       <label style={lbl}>{t.reportCategory}</label>
       <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-        {CATS.map(c=><button key={c} style={{padding:"6px 12px",border:`1.5px solid ${cat===c?C.accent:C.border}`,borderRadius:10,background:cat===c?"rgba(0,122,255,0.06)":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:cat===c?700:500,color:cat===c?C.accent:C.text,cursor:"pointer",fontFamily:F}} onClick={()=>setCat(c)}>{catLabel(c)}</button>)}
+        {CATS.map(c=><button key={c} style={{padding:"6px 12px",border:`1.5px solid ${cat===c?C.accent:C.border}`,borderRadius:10,background:cat===c?"rgba(16,185,129,0.08)":"rgba(255,255,255,0.6)",fontSize:12,fontWeight:cat===c?700:500,color:cat===c?C.accent:C.text,cursor:"pointer",fontFamily:F}} onClick={()=>setCat(c)}>{catLabel(c)}</button>)}
       </div>
 
       {/* Target person (optional) */}

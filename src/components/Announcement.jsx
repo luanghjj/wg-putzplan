@@ -139,7 +139,7 @@ export function AnnouncementAdmin({ t, st, sv, user, show }) {
             <button
               key={k}
               onClick={() => setLevel(k)}
-              style={{ flex: 1, padding: "8px 4px", borderRadius: 10, border: level === k ? "2px solid" : "2px solid transparent", borderColor: level === k ? (k === "urgent" ? C.red : k === "important" ? C.orange : C.accent) : "transparent", background: level === k ? (k === "urgent" ? "rgba(255,59,48,0.08)" : k === "important" ? "rgba(255,149,0,0.08)" : "rgba(0,113,227,0.08)") : "rgba(0,0,0,0.03)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: F, color: C.text, textAlign: "center" }}
+              style={{ flex: 1, padding: "8px 4px", borderRadius: 10, border: level === k ? "2px solid" : "2px solid transparent", borderColor: level === k ? (k === "urgent" ? C.red : k === "important" ? C.orange : C.accent) : "transparent", background: level === k ? (k === "urgent" ? "rgba(255,59,48,0.08)" : k === "important" ? "rgba(255,149,0,0.08)" : "rgba(16,185,129,0.08)") : "rgba(0,0,0,0.03)", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: F, color: C.text, textAlign: "center" }}
             >
               {v.icon} {v.label[lang]}
             </button>

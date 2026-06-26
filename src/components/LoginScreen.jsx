@@ -20,9 +20,9 @@ export default function LoginScreen({t,st,sv,onLogin}){
       @keyframes shakeX{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
       .shake{animation:shakeX 0.35s cubic-bezier(0.25,0.1,0.25,1)}
       @keyframes floatIn{from{opacity:0;transform:translateY(30px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
-      @keyframes glowPulse{0%,100%{box-shadow:0 0 30px rgba(0,122,255,0.15)}50%{box-shadow:0 0 60px rgba(0,122,255,0.25)}}
+      @keyframes glowPulse{0%,100%{box-shadow:0 0 30px rgba(16,185,129,0.18)}50%{box-shadow:0 0 60px rgba(16,185,129,0.3)}}
       .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,0.2);transition:all .2s;background:transparent}
-      .pin-dot.filled{background:#007AFF;border-color:#007AFF;box-shadow:0 0 10px rgba(0,122,255,0.4)}
+      .pin-dot.filled{background:#10B981;border-color:#10B981;box-shadow:0 0 10px rgba(16,185,129,0.5)}
     `}</style>
 
     <div style={{
@@ -32,9 +32,9 @@ export default function LoginScreen({t,st,sv,onLogin}){
       {/* Logo */}
       <div style={{
         width:80,height:80,borderRadius:24,margin:"0 auto 24px",
-        background:"linear-gradient(135deg, #007AFF, #5856D6)",
+        background:"linear-gradient(135deg, #10B981, #0D9488)",
         display:"flex",alignItems:"center",justifyContent:"center",
-        boxShadow:"0 8px 30px rgba(0,122,255,0.3)",
+        boxShadow:"0 8px 30px rgba(16,185,129,0.35)",
         animation:"glowPulse 3s ease-in-out infinite",
       }}>
         <span style={{fontSize:36}}>🏠</span>
@@ -66,8 +66,8 @@ export default function LoginScreen({t,st,sv,onLogin}){
       {/* CTA */}
       <button style={{
         ...btnP,width:"100%",marginTop:20,padding:"16px",fontSize:17,
-        background:"linear-gradient(135deg, #007AFF, #5856D6)",
-        boxShadow:"0 4px 20px rgba(0,122,255,0.3)",
+        background:"linear-gradient(135deg, #10B981, #0D9488)",
+        boxShadow:"0 4px 20px rgba(16,185,129,0.35)",
       }} onClick={go}>{t.login}</button>
     </div>
   </div>;

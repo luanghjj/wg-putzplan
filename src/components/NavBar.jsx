@@ -31,7 +31,7 @@ export default function NavBar({t,scr,set,user,hp,st,isC,onLogout}){
           background:`linear-gradient(135deg, ${C.accent}, ${C.purple})`,
           display:"flex",alignItems:"center",justifyContent:"center",
           color:"#fff",fontWeight:700,fontSize:18,fontFamily:F,
-          boxShadow:`0 4px 12px rgba(0,122,255,0.25)`,
+          boxShadow:`0 4px 12px rgba(16,185,129,0.28)`,
         }}>{user?.name?.[0]}</div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:17,fontWeight:700,color:C.text,letterSpacing:"-0.02em"}}>{user?.name}</div>

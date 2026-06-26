@@ -111,7 +111,7 @@ export default function HistoryScreen({ t, st, hp, ph, vp, user }) {
                 }
                 {/* Photo */}
                 {photoUrl && (
-                  <button style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "none", background: "rgba(0,113,227,0.08)", color: C.accent, cursor: "pointer", fontFamily: F, fontWeight: 600 }}
+                  <button style={{ fontSize: 11, padding: "2px 8px", borderRadius: 6, border: "none", background: "rgba(16,185,129,0.08)", color: C.accent, cursor: "pointer", fontFamily: F, fontWeight: 600 }}
                     onClick={() => vp(photoUrl)}>📷</button>
                 )}
               </div>

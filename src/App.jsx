@@ -272,12 +272,12 @@ export default function App() {
 
   if (ld || !st) return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
-      <div style={{ width: 36, height: 36, border: "3px solid #E2E8F0", borderTopColor: "#3B82F6", borderRadius: "50%", animation: "spin .8s linear infinite" }} />
+      <div style={{ width: 36, height: 36, border: "3px solid #E2E8F0", borderTopColor: "#10B981", borderRadius: "50%", animation: "spin .8s linear infinite" }} />
     </div>
   );
 
   return (
-    <div style={{ fontFamily: F, minHeight: "100vh", background: `radial-gradient(120% 90% at 0% 0%, #EAF2FF 0%, rgba(234,242,255,0) 45%), radial-gradient(110% 80% at 100% 0%, #F3EAFF 0%, rgba(243,234,255,0) 40%), ${C.bg}`, backgroundAttachment: "fixed", maxWidth: 520, margin: "0 auto", position: "relative" }}>
+    <div style={{ fontFamily: F, minHeight: "100vh", background: `radial-gradient(120% 90% at 0% 0%, #DCFCE7 0%, rgba(220,252,231,0) 45%), radial-gradient(110% 80% at 100% 0%, #CCFBF1 0%, rgba(204,251,241,0) 40%), ${C.bg}`, backgroundAttachment: "fixed", maxWidth: 520, margin: "0 auto", position: "relative" }}>
       <style>{globalCSS}</style>
       {toast && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", color: "#fff", padding: "10px 22px", borderRadius: 980, fontSize: 14, fontWeight: 500, zIndex: 1000, boxShadow: "0 4px 20px rgba(0,0,0,0.1)", fontFamily: F, animation: "fadeUp .3s cubic-bezier(0.25,0.1,0.25,1)", background: toast.ty === "success" ? C.green : C.red }}>{toast.m}</div>}
       {pinM && <PinModal t={t} st={st} pm={pinM} set={setPinM} />}

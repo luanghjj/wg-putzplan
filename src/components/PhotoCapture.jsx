@@ -120,7 +120,7 @@ export default function PhotoCapture({ t, onCap, photo }) {
           <canvas ref={canvasRef} style={{ display: "none" }} />
           {camErr && <p style={{ color: "#f87171", fontSize: 12, textAlign: "center", margin: "4px 0 0", fontFamily: F }}>{camErr}</p>}
           <div style={{ display: "flex", gap: 8, padding: 8, justifyContent: "center" }}>
-            <button disabled={busy} style={{ padding: "8px 20px", background: busy ? "#93C5FD" : "#3B82F6", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: busy ? "default" : "pointer", fontFamily: F }} onClick={snap}>
+            <button disabled={busy} style={{ padding: "8px 20px", background: busy ? "#6EE7B7" : "#10B981", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: busy ? "default" : "pointer", fontFamily: F }} onClick={snap}>
               {busy ? "⏳ Đang xử lý…" : "📸 Chụp"}
             </button>
             <button disabled={busy} style={{ padding: "8px 14px", background: "rgba(0,0,0,0.3)", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, cursor: busy ? "default" : "pointer", fontFamily: F }} onClick={closeCam}>
@@ -131,7 +131,7 @@ export default function PhotoCapture({ t, onCap, photo }) {
       ) : (
         <button
           disabled={busy}
-          style={{ width: "calc(100% - 32px)", padding: 8, background: "#EFF6FF", border: "2px dashed #93C5FD", borderRadius: 10, color: "#3B82F6", fontSize: 13, fontWeight: 600, cursor: busy ? "default" : "pointer", fontFamily: F }}
+          style={{ width: "calc(100% - 32px)", padding: 8, background: "#ECFDF5", border: "2px dashed #6EE7B7", borderRadius: 10, color: "#10B981", fontSize: 13, fontWeight: 600, cursor: busy ? "default" : "pointer", fontFamily: F }}
           onClick={openCam}
         >
           {busy ? "⏳ Đang xử lý…" : `📸 ${t.takePhoto}`}
