@@ -36,6 +36,8 @@ if ('serviceWorker' in navigator) {
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') reg.update().catch(() => {});
       });
+      // Also poll while the app stays open, so long sessions still update.
+      setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
     }).catch(() => { });
   });
 }
