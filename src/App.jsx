@@ -6,8 +6,37 @@ import { gwk, grot, fd, ft, gmo, getToday, getTimeLeft } from "./utils/helpers";
 import { F, C, btnG, ov, mod, globalCSS } from "./styles";
 
 if ('serviceWorker' in navigator) {
+  // Reload once when a NEW service worker takes control, so users always run
+  // the latest code instead of being stuck on a cached old bundle. We only
+  // reload if a controller already existed (i.e. a real update) — not on the
+  // very first install, where controllerchange also fires via clients.claim().
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading || !hadController) return;
+    reloading = true;
+    window.location.reload();
+  });
+
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => { });
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      // If an updated worker is already waiting, activate it immediately.
+      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+      // When a new worker is found, activate it as soon as it's installed.
+      reg.addEventListener('updatefound', () => {
+        const nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', () => {
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+            nw.postMessage({ type: 'SKIP_WAITING' });
+          }
+        });
+      });
+      // Check for a new version each time the app regains focus.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      });
+    }).catch(() => { });
   });
 }
 

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'putzplan-v4.7';
+const CACHE_NAME = 'putzplan-v4.8';
 const ASSETS = ['/', '/index.html'];
 
 // Install: cache core assets
@@ -94,6 +94,11 @@ self.addEventListener('notificationclick', (e) => {
 
 // Scheduled deadline check (triggered by periodic sync or message)
 self.addEventListener('message', (e) => {
+  // Allow the page to tell a waiting worker to activate immediately.
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
   if (e.data && e.data.type === 'DEADLINE_CHECK') {
     const { hoursLeft, tasksOpen, lang } = e.data;
     if (tasksOpen > 0 && hoursLeft <= 24) {
