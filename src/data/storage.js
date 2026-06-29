@@ -327,6 +327,28 @@ export async function cleanupOldPhotos() {
   }
 }
 
+// ---- Auto-cleanup: delete history older than 60 days ----
+// Keeps the table small (the leaderboard only looks at the current month,
+// but we keep ~2 months so "last month" stats still work). Runs silently
+// on app load.
+export async function cleanupOldHistory() {
+  try {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 60);
+    const cutoffISO = cutoff.toISOString();
+
+    const { error } = await supabase
+      .from("history")
+      .delete()
+      .lt("created_at", cutoffISO);
+
+    if (error) console.warn("cleanupOldHistory error:", error.message);
+    else console.log("✅ Old history cleaned up (>60 days)");
+  } catch (e) {
+    console.warn("cleanupOldHistory exception:", e);
+  }
+}
+
 // ---- RefPhoto helpers ----
 export const refPhotoStorage = {
   async setOne(taskKey, base64Data) {
