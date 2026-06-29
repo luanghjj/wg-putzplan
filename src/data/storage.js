@@ -4,11 +4,56 @@ import { DEF } from "./constants";
 export const SK = { data: "wg4", photos: "wg4p", refPhotos: "wg4r" };
 
 // ---- Load full state from normalized tables ----
+// Fetch ALL history rows, paging past PostgREST's default 1000-row cap.
+// Without this, once the table grows past the cap, newly inserted rows
+// (highest ids) fall outside the returned window — tasks appear "saved"
+// but vanish on reload and never show for admins.
+async function fetchAllHistory() {
+  const PAGE = 1000;
+  let from = 0;
+  let all = [];
+  for (;;) {
+    const { data, error } = await supabase
+      .from("history")
+      .select("*")
+      .order("id")
+      .range(from, from + PAGE - 1);
+    if (error) { console.error("history fetch error:", error.message); break; }
+    if (!data || data.length === 0) break;
+    all = all.concat(data);
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return all;
+}
+
+// Fetch ALL photo rows (key + data), paging past the 1000-row cap — same
+// reason as history: once proof photos pile up, the newest ones fall outside
+// the default window and images "fail to load".
+async function fetchAllPhotos() {
+  const PAGE = 1000;
+  let from = 0;
+  const obj = {};
+  for (;;) {
+    const { data, error } = await supabase
+      .from("photos")
+      .select("key, data")
+      .order("key")
+      .range(from, from + PAGE - 1);
+    if (error) { console.error("photos fetch error:", error.message); break; }
+    if (!data || data.length === 0) break;
+    data.forEach((p) => (obj[p.key] = p.data));
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return obj;
+}
+
 async function loadState() {
   const [
     { data: users },
     { data: rooms },
-    { data: historyRows },
+    historyRows,
     { data: tutorials },
     { data: configRows },
     { data: announcements },
@@ -16,7 +61,7 @@ async function loadState() {
   ] = await Promise.all([
     supabase.from("users").select("*"),
     supabase.from("rooms").select("*"),
-    supabase.from("history").select("*").order("id"),
+    fetchAllHistory(),
     supabase.from("tutorials").select("*"),
     supabase.from("config").select("*"),
     supabase.from("announcements").select("*"),
@@ -233,9 +278,7 @@ export const storage = {
       return { value: JSON.stringify(state) };
     }
     if (key === SK.photos) {
-      const { data } = await supabase.from("photos").select("key, data");
-      const obj = {};
-      (data || []).forEach((p) => (obj[p.key] = p.data));
+      const obj = await fetchAllPhotos();
       return { value: JSON.stringify(obj) };
     }
     return { value: null };
@@ -320,9 +363,7 @@ export function onDataChange(key, callback) {
   if (key === SK.photos) {
     const ch = supabase.channel(`ph_${ts}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "photos" }, async () => {
-        const { data } = await supabase.from("photos").select("key, data");
-        const obj = {};
-        (data || []).forEach((p) => (obj[p.key] = p.data));
+        const obj = await fetchAllPhotos();
         callback(obj);
       }).subscribe();
     return () => supabase.removeChannel(ch);
