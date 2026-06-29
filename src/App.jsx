@@ -6,37 +6,44 @@ import { gwk, grot, fd, ft, gmo, getToday, getTimeLeft } from "./utils/helpers";
 import { F, C, btnG, ov, mod, globalCSS } from "./styles";
 
 if ('serviceWorker' in navigator) {
-  // Reload once when a NEW service worker takes control, so users always run
-  // the latest code instead of being stuck on a cached old bundle. We only
-  // reload if a controller already existed (i.e. a real update) — not on the
-  // very first install, where controllerchange also fires via clients.claim().
+  // Keep the installed app up to date WITHOUT interrupting the user. A new
+  // service worker is detected on focus / periodically, but we only reload
+  // when the app is in the BACKGROUND — never mid-action (e.g. right after
+  // returning from the camera), which would drop an in-progress task/photo.
   const hadController = !!navigator.serviceWorker.controller;
+  let updateReady = false;
   let reloading = false;
+
+  const applyUpdateIfHidden = () => {
+    if (updateReady && !reloading && document.visibilityState === 'hidden') {
+      reloading = true;
+      window.location.reload();
+    }
+  };
+
   navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (reloading || !hadController) return;
-    reloading = true;
-    window.location.reload();
+    if (!hadController) return; // first install — nothing to reload for
+    updateReady = true;
+    applyUpdateIfHidden();
   });
 
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js').then((reg) => {
-      // If an updated worker is already waiting, activate it immediately.
-      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-      // When a new worker is found, activate it as soon as it's installed.
+      const activate = (w) => w && w.postMessage({ type: 'SKIP_WAITING' });
+      if (reg.waiting) activate(reg.waiting);
       reg.addEventListener('updatefound', () => {
         const nw = reg.installing;
         if (!nw) return;
         nw.addEventListener('statechange', () => {
-          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-            nw.postMessage({ type: 'SKIP_WAITING' });
-          }
+          if (nw.state === 'installed' && navigator.serviceWorker.controller) activate(nw);
         });
       });
-      // Check for a new version each time the app regains focus.
+      // Look for a new version on focus and periodically; the reload itself is
+      // deferred until the app goes to the background.
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') reg.update().catch(() => {});
+        else applyUpdateIfHidden();
       });
-      // Also poll while the app stays open, so long sessions still update.
       setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
     }).catch(() => { });
   });
